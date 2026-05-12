@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% block title %}{{ category.name }} Skills{% endblock %}
+
+{% block content %}
+<main class="category-explorer page-fade">
+  <section class="category-hero reveal-on-scroll">
+    <div class="category-hero-copy">
+      <span class="category-icon-shell category-hero-icon">
+        <i class="fas {{ category_icon_class }}"></i>
+      </span>
+      <p class="eyebrow">Category Community</p>
+      <h1>{{ category.name }} Skills</h1>
+      <p>
+        {% if category.description %}
+          {{ category.description }}
+        {% else %}
+          Explore mentors, learners, active exchanges, and practical skills in {{ category.name }}.
+        {% endif %}
+      </p>
+    </div>
+    <div class="category-hero-stats stagger-children">
+      <div class="reveal-on-scroll"><strong>{{ skill_count }}</strong><span>Active skills</span></div>
+      <div class="reveal-on-scroll"><strong>{{ mentor_count }}</strong><span>Mentors</span></div>
+      <div class="reveal-on-scroll"><strong>{{ learner_count }}</strong><span>Learners</span></div>
+      <div class="reveal-on-scroll"><strong>{{ active_exchanges }}</strong><span>Exchanges</span></div>
+    </div>
+  </section>
+
+  <section class="card category-filter-card reveal-on-scroll">
+    <form method="get" class="category-filter-form">
+      <label>
+        <span class="form-label">Search skills or people</span>
+        <input type="search" name="q" class="form-input" value="{{ selected_search }}" placeholder="Python, guitar, design...">
+      </label>
+      <label>
+        <span class="form-label">Level</span>
+        <select name="level" class="form-input">
+          <option value="">Any level</option>
+          <option value="beginner" {% if selected_level == 'beginner' %}selected{% endif %}>Beginner</option>
+          <option value="intermediate" {% if selected_level == 'intermediate' %}selected{% endif %}>Intermediate</option>
+          <option value="advanced" {% if selected_level == 'advanced' %}selected{% endif %}>Advanced</option>
+          <option value="expert" {% if selected_level == 'expert' %}selected{% endif %}>Expert</option>
+        </select>
+      </label>
+      <label>
+        <span class="form-label">Role</span>
+        <select name="role" class="form-input">
+          <option value="">Mentors & learners</option>
+          <option value="mentor" {% if selected_role == 'mentor' %}selected{% endif %}>Mentors</option>
+          <option value="learner" {% if selected_role == 'learner' %}selected{% endif %}>Learners</option>
+        </select>
+      </label>
+      <div class="category-filter-actions">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Apply</button>
+        <a href="{% url 'category_detail' category.slug %}" class="btn btn-secondary">Reset</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="category-section reveal-on-scroll">
+    <div class="section-heading">
+      <p class="eyebrow">Popular Skills</p>
+      <h2>Start with what people are exchanging now</h2>
+    </div>
+    <div class="category-skill-grid">
+      {% for skill in skills %}
+      <article class="card category-skill-card reveal-on-scroll" data-category-item data-name="{{ skill.name|lower }}" data-role="{% if skill.mentor_count %}mentor {% endif %}{% if skill.learner_count %}learner{% endif %}">
+        <div class="skill-card-topline">
+          <h3>{{ skill.name }}</h3>
+          {% if skill.activity_count >= 3 %}<span class="badge badge-teal">Trending</span>{% endif %}
+        </div>
+        <p>
+          {% if skill.description %}
+            {{ skill.description|truncatechars:120 }}
+          {% else %}
+            Learn, teach, or exchange {{ skill.name }} with people in the SkillSphere community.
+          {% endif %}
+        </p>
+        <div class="skill-card-metrics">
+          <span><strong>{{ skill.mentor_count }}</strong> mentors</span>
+          <span><strong>{{ skill.learner_count }}</strong> learners</span>
+        </div>
+        <div class="button-row">
+          <a href="{% url 'skill_add' %}" class="btn btn-secondary btn-sm">Explore Skill</a>
+          <a href="{% url 'matches' %}?category={{ category.id }}" class="btn btn-primary btn-sm">Find Mentors</a>
+        </div>
+      </article>
+      {% empty %}
+      <div class="card empty-state reveal-on-scroll">
+        <i class="fas fa-search"></i>
+        <h3>No skills found</h3>
+        <p>Try a different search or reset your filters.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="category-section reveal-on-scroll">
+    <div class="section-heading">
+      <p class="eyebrow">Mentors & Learners</p>
+      <h2>Meet people in this category</h2>
+    </div>
+    <div class="category-user-grid">
+      {% for item in user_cards %}
+      <article class="card category-user-card reveal-on-scroll" data-category-item data-name="{{ item.user.username|lower }} {{ item.offered|join:' '|lower }} {{ item.wanted|join:' '|lower }}">
+        <div class="category-user-header">
+          <a href="{% url 'profile_view' item.user.username %}" class="avatar avatar-md">
+            {% if item.profile and item.profile.avatar %}
+              <img src="{{ item.profile.avatar.url }}" alt="{{ item.user.username }}">
+            {% else %}
+              {{ item.user.first_name.0|default:item.user.username.0|upper }}
+            {% endif %}
+          </a>
+          <div>
+            <h3>{{ item.user.get_full_name|default:item.user.username }}</h3>
+            <span>{{ item.credibility }} credibility</span>
+          </div>
+        </div>
+        {% if item.offered %}
+          <p><strong>Offers:</strong> {{ item.offered|join:", " }}</p>
+        {% endif %}
+        {% if item.wanted %}
+          <p><strong>Wants:</strong> {{ item.wanted|join:", " }}</p>
+        {% endif %}
+        <div class="button-row">
+          <a href="{% url 'profile_view' item.user.username %}" class="btn btn-secondary btn-sm">View Profile</a>
+          {% if request.user.is_authenticated and request.user != item.user %}
+            <form method="post" action="{% url 'send_request' item.user.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary btn-sm">Connect</button>
+            </form>
+          {% elif not request.user.is_authenticated %}
+            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-sm">Connect</a>
+          {% endif %}
+        </div>
+      </article>
+      {% empty %}
+      <div class="card empty-state reveal-on-scroll">
+        <i class="fas fa-users"></i>
+        <h3>No people found</h3>
+        <p>Be the first to add a {{ category.name }} skill to your profile.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="category-section reveal-on-scroll">
+    <div class="section-heading">
+      <p class="eyebrow">Trending Exchanges</p>
+      <h2>Popular skill swaps</h2>
+    </div>
+    <div class="exchange-chip-grid">
+      {% for chip in exchange_chips %}
+      <a href="{% url 'matches' %}?category={{ category.id }}" class="exchange-chip reveal-on-scroll">
+        <span>{{ chip.teach }}</span>
+        <i class="fas fa-exchange-alt"></i>
+        <span>{{ chip.learn }}</span>
+      </a>
+      {% empty %}
+      <span class="exchange-chip reveal-on-scroll">New exchanges will appear as the community grows</span>
+      {% endfor %}
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const search = document.querySelector('.category-filter-form input[name="q"]');
+  if (!search) return;
+
+  search.addEventListener('input', function () {
+    const term = this.value.trim().toLowerCase();
+    document.querySelectorAll('[data-category-item]').forEach((item) => {
+      const name = item.dataset.name || '';
+      item.style.display = !term || name.includes(term) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% endblock %}

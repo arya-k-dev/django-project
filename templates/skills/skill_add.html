@@ -1,0 +1,93 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Add Skill | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Skills</p>
+    <h1>Add a Skill</h1>
+    <p class="text-slate">Tell the platform what you can teach or what you want to learn.</p>
+  </div>
+  <a href="{% url 'skill_manage' %}" class="btn btn-secondary">Manage skills</a>
+</div>
+
+<section class="card narrow-card">
+  <div class="card-header">
+    <h2>Skill details</h2>
+    <p>Search existing skills or create a new one by typing its name.</p>
+  </div>
+  <div class="card-body">
+    <div class="segmented-control" role="tablist" aria-label="Skill type">
+      <button type="button" id="tab-teach" class="active" data-skill-type="teach">
+        <i class="fas fa-chalkboard-user"></i> I can teach
+      </button>
+      <button type="button" id="tab-learn" data-skill-type="learn">
+        <i class="fas fa-graduation-cap"></i> I want to learn
+      </button>
+    </div>
+
+    <form method="post" id="skill-form" class="form-stack" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="skill" id="skill-id" value="{{ form.skill.value|default:'' }}">
+      <input type="hidden" name="skill_type" id="skill-type-input" value="{{ form.skill_type.value|default:'teach' }}">
+
+      <div class="form-group">
+        <label class="form-label" for="skill-name-input">Skill name</label>
+        <input type="text" id="skill-name-input" name="skill_name" value="{{ form.skill_name.value|default:'' }}" placeholder="Python, Guitar, Watercolor, Spanish..." class="form-input" autocomplete="off">
+        <p class="form-help">Choose an existing skill from suggestions or create a new skill.</p>
+        {% for error in form.skill.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        {% for error in form.skill_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="form-grid two">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.level.id_for_label }}">Level</label>
+          {{ form.level }}
+          {% for error in form.level.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.years_experience.id_for_label }}">Years of experience</label>
+          {{ form.years_experience }}
+          {% for error in form.years_experience.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        <p class="form-help">Add context about what you teach or hope to learn.</p>
+        {% for error in form.description.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="form-error-box">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-actions">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        <button type="submit" class="btn btn-primary">Add Skill</button>
+      </div>
+    </form>
+
+    {% if categories %}
+      <div class="category-shortcuts">
+        <p class="eyebrow">Browse by category</p>
+        <div class="tag-list">
+          {% for cat in categories %}
+            <button type="button" class="badge badge-gray" data-focus-skill title="{{ cat.description }}">{{ cat.name }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    initSkillAutocomplete('skill-name-input', 'skill-id');
+    initSkillTypeToggle();
+  });
+</script>
+{% endblock %}

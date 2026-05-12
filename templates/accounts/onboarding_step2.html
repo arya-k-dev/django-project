@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Step 2 of 3 - Skills You Can Teach | SkillSphere{% endblock %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="onboarding-layout">
+  <aside class="onboarding-panel">
+    <a href="{% url 'home' %}" class="brand-link">
+      <span class="brand-mark"><i class="fas fa-exchange-alt"></i></span>
+      <span class="brand-name">SkillSphere</span>
+    </a>
+    <div class="step-progress" aria-label="Step 2 of 3">
+      <span class="done"><i class="fas fa-check"></i></span>
+      <b></b>
+      <span class="active">2</span>
+      <b></b>
+      <span>3</span>
+    </div>
+    <h1>What can you teach?</h1>
+    <p>Add expertise you can share with another member. You can add more later from Skills.</p>
+  </aside>
+
+  <section class="onboarding-card card page-fade">
+    <div class="card-header">
+      <p class="eyebrow">Step 2 of 3</p>
+      <h2>Add a Teaching Skill</h2>
+      <p>Use autocomplete to select an existing skill, or type a new one.</p>
+    </div>
+    <div class="card-body">
+      {% if teach_skills %}
+      <div class="current-skill-list">
+        {% for skill in teach_skills %}
+        <div>
+          <span>{{ skill.skill.name }}</span>
+          {% if skill.level %}<small>{{ skill.get_level_display }}</small>{% endif %}
+          <a href="{% url 'skill_edit' skill.id %}" class="icon-link" aria-label="Edit {{ skill.skill.name }}"><i class="fas fa-pen"></i></a>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" class="form-stack" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="skill" id="teach-skill-id" value="{{ form.skill.value|default:'' }}">
+        <input type="hidden" name="skill_type" value="teach">
+
+        <div class="form-group">
+          <label class="form-label" for="teach-skill-name">Skill name</label>
+          <input id="teach-skill-name" type="text" name="skill_name" class="form-input" value="{{ form.skill_name.value|default:'' }}" placeholder="Python, Guitar, Public speaking..." autocomplete="off">
+          <p class="form-help">Pick an existing skill or create a new one by typing its name.</p>
+          {% for error in form.skill.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          {% for error in form.skill_name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+
+        <div class="form-grid two">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.level.id_for_label }}">Experience level</label>
+            {{ form.level }}
+            {% for error in form.level.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.years_experience.id_for_label }}">Years of experience</label>
+            {{ form.years_experience }}
+            {% for error in form.years_experience.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.description.id_for_label }}">Teaching notes</label>
+          {{ form.description }}
+          <p class="form-help">Briefly describe what you can help someone learn.</p>
+          {% for error in form.description.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="form-error-box">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-actions">
+          <a href="{% url 'onboarding_step3' %}" class="btn btn-secondary">Skip for now</a>
+          <button type="submit" class="btn btn-primary">Add Teaching Skill</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    initSkillAutocomplete('teach-skill-name', 'teach-skill-id');
+  });
+</script>
+{% endblock %}

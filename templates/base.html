@@ -1,0 +1,157 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SkillSphere{% endblock %} - Learn. Teach. Grow.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        lavender: {
+                            50: '#f8f7ff',
+                            100: '#f0efff',
+                            200: '#e1ddff',
+                            300: '#c9c2ff',
+                            400: '#a89bff',
+                            500: '#8b6cff',
+                            600: '#7a5aff',
+                            700: '#6b4eff',
+                            800: '#5c42cc',
+                            900: '#4f3aa3'
+                        },
+                        purple: {
+                            50: '#faf7ff',
+                            100: '#f3efff',
+                            200: '#e9e0ff',
+                            300: '#d7c7ff',
+                            400: '#bf9fff',
+                            500: '#a374ff',
+                            600: '#945eff',
+                            700: '#8547ff',
+                            800: '#7633cc',
+                            900: '#6828a3'
+                        },
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a'
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Poppins', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        xl: '0.75rem',
+                        '2xl': '1rem',
+                        '3xl': '1.5rem',
+                    },
+                    letterSpacing: {
+                        tightest: '0',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideInUp 0.5s ease-out',
+                        'scale-in': 'scaleIn 0.3s ease-out',
+                        'bounce-in': 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                        'float': 'float 3s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite'
+                    }
+                },
+            },
+        };
+    </script>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=21">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="font-body text-darkText">
+    {% block navbar %}
+    <nav class="app-navbar">
+        <div class="app-navbar-inner">
+            <a href="{% url 'home' %}" class="brand-link" aria-label="SkillSphere home">
+                <span class="brand-mark"><i class="fas fa-exchange-alt"></i></span>
+                <span class="brand-name">SkillSphere</span>
+            </a>
+
+            <div class="nav-desktop">
+                {% if request.user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
+                    <a href="{% url 'matches' %}" class="nav-link">Matches</a>
+                    <a href="{% url 'inbox' %}" class="nav-link">Messages</a>
+                    <a href="{% url 'profile_view' request.user.username %}" class="btn btn-secondary btn-sm">Profile</a>
+                {% else %}
+                    <a href="{% url 'home' %}#how-it-works" class="nav-link">How it Works</a>
+                    <a href="{% url 'home' %}#categories" class="nav-link">Categories</a>
+                    <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Log In</a>
+                    <a href="{% url 'signup' %}" class="btn btn-primary btn-sm">Sign Up</a>
+                {% endif %}
+            </div>
+
+            <button id="mobile-nav-toggle" class="icon-button md:hidden" type="button" aria-label="Open navigation" aria-expanded="false">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div id="mobile-nav-panel" class="mobile-nav-panel hidden">
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
+                <a href="{% url 'profile_view' request.user.username %}" class="nav-link">Profile</a>
+                <a href="{% url 'matches' %}" class="nav-link">Matches</a>
+                <a href="{% url 'requests' %}" class="nav-link">Requests</a>
+                <a href="{% url 'inbox' %}" class="nav-link">Messages</a>
+                <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="nav-link">Log In</a>
+                <a href="{% url 'signup' %}" class="nav-link">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endblock %}
+
+    {% if messages %}
+    <div class="toast-stack" aria-live="polite" aria-atomic="true">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main class="app-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <div class="brand-link">
+                <span class="brand-mark small"><i class="fas fa-exchange-alt"></i></span>
+                <span class="brand-name">SkillSphere</span>
+            </div>
+            <p>&copy; {% now "Y" %} SkillSphere - Learn. Teach. Grow Together.</p>
+            <div class="footer-links">
+                <a href="{% url 'home' %}#how-it-works">How it works</a>
+                <a href="{% url 'home' %}#categories">Categories</a>
+            </div>
+        </div>
+    </footer>
+    {% endblock %}
+
+    <script src="{% static 'js/main.js' %}?v=9"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,109 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Exchange Requests | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header reveal-on-scroll">
+  <div>
+    <p class="eyebrow">Requests</p>
+    <h1>Exchange Requests</h1>
+    <p class="text-slate">Manage your incoming and outgoing skill exchange requests.</p>
+  </div>
+  <a href="{% url 'matches' %}" class="btn btn-primary">Find Matches</a>
+</div>
+
+<div data-tabs class="tabs-shell reveal-on-scroll">
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="tab-received">Received <span class="badge badge-coral">{{ received|length }}</span></button>
+    <button type="button" class="tab-btn" data-tab="tab-sent">Sent <span class="badge badge-gray">{{ sent|length }}</span></button>
+  </div>
+
+  <section id="tab-received" class="tab-pane active">
+    {% if received %}
+      {% for req in received %}
+      <article class="request-card reveal-on-scroll">
+        <a href="{% url 'profile_view' req.sender.username %}" class="avatar avatar-md">{{ req.sender.first_name.0|default:req.sender.username.0|upper }}</a>
+        <div class="request-info">
+          <div class="row-title-line">
+            <a href="{% url 'profile_view' req.sender.username %}" class="row-title">{{ req.sender.get_full_name|default:req.sender.username }}</a>
+            <span class="badge {% if req.status == 'pending' %}badge-gold{% elif req.status == 'accepted' %}badge-green{% elif req.status == 'declined' %}badge-gray{% else %}badge-teal{% endif %}">{{ req.get_status_display }}</span>
+          </div>
+          {% if req.message %}<p class="request-meta">"{{ req.message|truncatechars:140 }}"</p>{% endif %}
+          <div class="skill-mini-list">
+            {% if req.sender_teach_skills %}<span><strong>They teach you:</strong> {{ req.sender_teach_skills|join:", " }}</span>{% endif %}
+            {% if req.receiver_teach_skills %}<span><strong>You teach them:</strong> {{ req.receiver_teach_skills|join:", " }}</span>{% endif %}
+          </div>
+          <p class="request-meta">{{ req.created_at|timesince }} ago - Match score: {{ req.match_score|floatformat:0 }} pts</p>
+        </div>
+        <div class="request-actions">
+          {% if req.status == 'pending' %}
+            <form method="post" action="{% url 'respond_request' req.pk %}">
+              {% csrf_token %}
+              <button name="action" value="accept" class="btn btn-primary btn-sm">Accept</button>
+            </form>
+            <form method="post" action="{% url 'respond_request' req.pk %}">
+              {% csrf_token %}
+              <button name="action" value="decline" class="btn btn-secondary btn-sm">Decline</button>
+            </form>
+          {% elif req.status == 'accepted' %}
+            {% if req.conversation %}<a href="{% url 'conversation' req.conversation.id %}" class="btn btn-primary btn-sm">Chat</a>{% endif %}
+            <form method="post" action="{% url 'mark_completed' req.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-secondary btn-sm">Mark Done</button>
+            </form>
+          {% elif req.status == 'completed' %}
+            <a href="{% url 'rate_user' req.sender.id %}" class="btn btn-primary btn-sm">Rate</a>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state card reveal-on-scroll">
+        <i class="fas fa-inbox"></i>
+        <h3>No requests received</h3>
+        <p>When someone sends you a request, it will appear here.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <section id="tab-sent" class="tab-pane">
+    {% if sent %}
+      {% for req in sent %}
+      <article class="request-card reveal-on-scroll">
+        <a href="{% url 'profile_view' req.receiver.username %}" class="avatar avatar-md">{{ req.receiver.first_name.0|default:req.receiver.username.0|upper }}</a>
+        <div class="request-info">
+          <div class="row-title-line">
+            <a href="{% url 'profile_view' req.receiver.username %}" class="row-title">{{ req.receiver.get_full_name|default:req.receiver.username }}</a>
+            <span class="badge {% if req.status == 'pending' %}badge-gold{% elif req.status == 'accepted' %}badge-green{% elif req.status == 'declined' %}badge-coral{% else %}badge-teal{% endif %}">{{ req.get_status_display }}</span>
+          </div>
+          {% if req.message %}<p class="request-meta">"{{ req.message|truncatechars:140 }}"</p>{% endif %}
+          <p class="request-meta">Sent {{ req.created_at|timesince }} ago</p>
+        </div>
+        <div class="request-actions">
+          {% if req.status == 'pending' %}
+            <form method="post" action="{% url 'cancel_request' req.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-secondary btn-sm">Cancel</button>
+            </form>
+          {% elif req.status == 'accepted' %}
+            {% if req.conversation %}<a href="{% url 'conversation' req.conversation.id %}" class="btn btn-primary btn-sm">Chat</a>{% endif %}
+            <form method="post" action="{% url 'mark_completed' req.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-secondary btn-sm">Mark Done</button>
+            </form>
+          {% elif req.status == 'completed' %}
+            <a href="{% url 'rate_user' req.receiver.id %}" class="btn btn-primary btn-sm">Rate</a>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state card reveal-on-scroll">
+        <i class="fas fa-paper-plane"></i>
+        <h3>No requests sent</h3>
+        <p>Find your matches and send your first request.</p>
+        <a href="{% url 'matches' %}" class="btn btn-primary btn-sm">Find Matches</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

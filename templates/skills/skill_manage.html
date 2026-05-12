@@ -1,0 +1,100 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Manage Skills | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Skills</p>
+    <h1>My Skills</h1>
+    <p class="text-slate">Manage what you teach and what you want to learn.</p>
+  </div>
+  <a href="{% url 'skill_add' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Skill</a>
+</div>
+
+<div class="content-grid two">
+  <section class="card">
+    <div class="card-header horizontal">
+      <div>
+        <h2>Skills I Teach</h2>
+        <p>Your shared expertise.</p>
+      </div>
+      <span class="badge badge-teal">{{ teach_skills.count }}</span>
+    </div>
+    <div class="card-body flush">
+      {% if teach_skills %}
+        {% for us in teach_skills %}
+        <article class="skill-manage-row">
+          <div>
+            <h3>{{ us.skill.name }}</h3>
+            {% if us.skill.category %}<p>{{ us.skill.category.name }}</p>{% endif %}
+            <div class="tag-list">
+              {% if us.level %}<span class="badge badge-teal">{{ us.get_level_display }}</span>{% endif %}
+              {% if us.years_experience %}<span class="badge badge-gray">{{ us.years_experience }} yr{{ us.years_experience|pluralize }}</span>{% endif %}
+            </div>
+            {% if us.description %}<p class="skill-description">{{ us.description }}</p>{% endif %}
+          </div>
+          <div class="button-row">
+            <a href="{% url 'skill_edit' us.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            <form method="post" action="{% url 'skill_delete' us.pk %}" data-confirm="Remove this skill?">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state compact">
+          <i class="fas fa-chalkboard-user"></i>
+          <h3>No teaching skills yet</h3>
+          <p>Add skills you can share with others.</p>
+          <a href="{% url 'skill_add' %}" class="btn btn-primary btn-sm">Add a Skill</a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header horizontal">
+      <div>
+        <h2>Skills I Want to Learn</h2>
+        <p>Your learning goals.</p>
+      </div>
+      <span class="badge badge-navy">{{ learn_skills.count }}</span>
+    </div>
+    <div class="card-body flush">
+      {% if learn_skills %}
+        {% for us in learn_skills %}
+        <article class="skill-manage-row">
+          <div>
+            <h3>{{ us.skill.name }}</h3>
+            {% if us.skill.category %}<p>{{ us.skill.category.name }}</p>{% endif %}
+            <div class="tag-list">
+              {% if us.level %}<span class="badge badge-navy">{{ us.get_level_display }}</span>{% endif %}
+            </div>
+            {% if us.description %}<p class="skill-description">{{ us.description }}</p>{% endif %}
+          </div>
+          <div class="button-row">
+            <a href="{% url 'skill_edit' us.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            <form method="post" action="{% url 'skill_delete' us.pk %}" data-confirm="Remove this skill?">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state compact">
+          <i class="fas fa-graduation-cap"></i>
+          <h3>Nothing to learn yet</h3>
+          <p>Add skills you are eager to pick up.</p>
+          <a href="{% url 'skill_add' %}" class="btn btn-primary btn-sm">Add a Skill</a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<div class="centered-actions">
+  <a href="{% url 'matches' %}" class="btn btn-primary btn-lg">Find My Matches</a>
+</div>
+{% endblock %}

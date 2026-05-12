@@ -1,0 +1,238 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Find Matches | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header reveal-on-scroll">
+  <div>
+    <p class="eyebrow">Matching</p>
+    <h1>Your Skill Matches</h1>
+    <p class="text-slate">People who can teach what you want to learn, and want what you can teach.</p>
+  </div>
+  <div class="button-row">
+    <a href="{% url 'skill_manage' %}" class="btn btn-secondary"><i class="fas fa-layer-group"></i> My Skills</a>
+    <a href="{% url 'requests' %}" class="btn btn-secondary"><i class="fas fa-envelope-open-text"></i> Requests</a>
+  </div>
+</div>
+
+<div class="content-grid two">
+  <section class="card reveal-on-scroll">
+    <div class="card-header horizontal">
+      <div>
+        <h2>Incoming Requests</h2>
+        <p>Review people who want to exchange with you.</p>
+      </div>
+      {% if incoming_requests %}<span class="badge badge-coral">{{ incoming_requests|length }}</span>{% endif %}
+    </div>
+    <div class="card-body flush">
+      {% if incoming_requests %}
+        {% for req in incoming_requests %}
+        <article class="request-row reveal-on-scroll">
+          <div class="request-row-main">
+            <a href="{% url 'profile_view' req.sender.username %}" class="avatar avatar-md">
+              {{ req.sender.first_name.0|default:req.sender.username.0|upper }}
+            </a>
+            <div>
+              <a href="{% url 'profile_view' req.sender.username %}" class="row-title">{{ req.sender.get_full_name|default:req.sender.username }}</a>
+              <p class="text-slate small">{{ req.created_at|timesince }} ago</p>
+              <div class="skill-mini-list">
+                {% if req.sender_teach_skills %}
+                  <span><strong>They teach you:</strong> {{ req.sender_teach_skills|join:", " }}</span>
+                {% endif %}
+                {% if req.receiver_teach_skills %}
+                  <span><strong>You teach them:</strong> {{ req.receiver_teach_skills|join:", " }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="button-row">
+            <form method="post" action="{% url 'accept_request' req.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary btn-sm">Accept</button>
+            </form>
+            <form method="post" action="{% url 'decline_request' req.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-secondary btn-sm">Decline</button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state compact">
+          <i class="fas fa-inbox"></i>
+          <h3>No incoming requests</h3>
+          <p>New requests will appear here.</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card reveal-on-scroll">
+    <div class="card-header">
+      <h2>Outgoing Requests</h2>
+      <p>Track requests you have sent.</p>
+    </div>
+    <div class="card-body flush">
+      {% if outgoing_requests %}
+        {% for req in outgoing_requests %}
+        <article class="request-row reveal-on-scroll">
+          <div class="request-row-main">
+            <a href="{% url 'profile_view' req.receiver.username %}" class="avatar avatar-md">
+              {{ req.receiver.first_name.0|default:req.receiver.username.0|upper }}
+            </a>
+            <div>
+              <a href="{% url 'profile_view' req.receiver.username %}" class="row-title">{{ req.receiver.get_full_name|default:req.receiver.username }}</a>
+              <p class="text-slate small">Sent {{ req.created_at|timesince }} ago</p>
+              <span class="badge {% if req.status == 'pending' %}badge-gold{% elif req.status == 'accepted' %}badge-green{% else %}badge-gray{% endif %}">
+                {{ req.get_status_display }}
+              </span>
+            </div>
+          </div>
+          {% if req.status == 'pending' %}
+          <form method="post" action="{% url 'cancel_request' req.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+          </form>
+          {% endif %}
+        </article>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state compact">
+          <i class="fas fa-paper-plane"></i>
+          <h3>No outgoing requests</h3>
+          <p>Connect with a match to start an exchange.</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<section class="card filter-card reveal-on-scroll">
+  <form method="get" action="{% url 'matches' %}" class="filter-form">
+    <div class="form-group">
+      <label class="form-label" for="category-filter">Skill category</label>
+      <select id="category-filter" name="category" class="form-input">
+        <option value="">All categories</option>
+        {% for cat in skill_categories %}
+          <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="availability-filter">Availability</label>
+      <select id="availability-filter" name="availability" class="form-input">
+        <option value="">Any availability</option>
+        <option value="weekdays" {% if selected_availability == 'weekdays' %}selected{% endif %}>Weekdays</option>
+        <option value="evenings" {% if selected_availability == 'evenings' %}selected{% endif %}>Evenings</option>
+        <option value="weekends" {% if selected_availability == 'weekends' %}selected{% endif %}>Weekends</option>
+        <option value="flexible" {% if selected_availability == 'flexible' %}selected{% endif %}>Flexible</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="sort-filter">Sort by</label>
+      <select id="sort-filter" name="sort" class="form-input">
+        <option value="-score" {% if selected_sort == '-score' %}selected{% endif %}>Best score first</option>
+        <option value="score" {% if selected_sort == 'score' %}selected{% endif %}>Lowest score first</option>
+      </select>
+    </div>
+    <div class="button-row filter-actions">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Apply</button>
+      <a href="{% url 'matches' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</section>
+
+<div class="section-heading reveal-on-scroll">
+  <div>
+    <p class="eyebrow">Best Matches</p>
+    <h2>Recommended for you</h2>
+  </div>
+</div>
+
+{% if matches %}
+<div class="match-grid">
+  {% for match in matches %}
+  <article class="match-card card-hover reveal-on-scroll">
+    <div class="match-card-header">
+      <a href="{% url 'profile_view' match.user.username %}" class="avatar avatar-lg">
+        {% if match.profile and match.profile.avatar %}
+          <img src="{{ match.profile.avatar.url }}" alt="{{ match.user.username }}">
+        {% else %}
+          {{ match.user.first_name.0|default:match.user.username.0|upper }}
+        {% endif %}
+      </a>
+      <div>
+        <a href="{% url 'profile_view' match.user.username %}" class="match-name">{{ match.user.get_full_name|default:match.user.username }}</a>
+        {% if match.profile and match.profile.location %}
+          <p class="text-slate small"><i class="fas fa-map-marker-alt"></i> {{ match.profile.location }}</p>
+        {% endif %}
+      </div>
+      <span class="score-pill">{{ match.score }} pts</span>
+    </div>
+
+    <div class="match-section learn">
+      <h3><i class="fas fa-graduation-cap"></i> They teach you</h3>
+      {% if match.they_teach_me %}
+        <div class="tag-list">
+          {% for skill in match.they_teach_me %}<span class="skill-tag skill-tag-learn">{{ skill }}</span>{% endfor %}
+        </div>
+      {% else %}
+        <p class="text-slate small">No direct teaching overlap.</p>
+      {% endif %}
+    </div>
+
+    <div class="match-section teach">
+      <h3><i class="fas fa-chalkboard-user"></i> You teach them</h3>
+      {% if match.i_teach_them %}
+        <div class="tag-list">
+          {% for skill in match.i_teach_them %}<span class="skill-tag skill-tag-teach">{{ skill }}</span>{% endfor %}
+        </div>
+      {% else %}
+        <p class="text-slate small">No direct learning overlap.</p>
+      {% endif %}
+    </div>
+
+    {% if match.profile and match.profile.bio %}
+      <p class="match-bio">{{ match.profile.bio|truncatechars:120 }}</p>
+    {% endif %}
+
+    <div class="match-actions">
+      <a href="{% url 'profile_view' match.user.username %}" class="btn btn-secondary btn-sm"><i class="fas fa-user"></i> Profile</a>
+      <button type="button" class="btn btn-primary btn-sm" data-open-request-modal data-user-id="{{ match.user.id }}" data-user-name="{{ match.user.get_full_name|default:match.user.username }}">
+        <i class="fas fa-handshake"></i> Connect
+      </button>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state reveal-on-scroll">
+  <i class="fas fa-search"></i>
+  <h3>No matches found</h3>
+  <p>Add more teaching skills and learning goals to improve your recommendations.</p>
+  <div class="button-row center">
+    <a href="{% url 'skill_add' %}" class="btn btn-primary">Add Skills</a>
+    <a href="{% url 'skill_manage' %}" class="btn btn-secondary">Manage Skills</a>
+  </div>
+</div>
+{% endif %}
+
+<div id="send-request-modal" class="modal-backdrop hidden" data-modal>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Send Exchange Request</h3>
+      <button type="button" class="icon-button" data-close-modal aria-label="Close modal"><i class="fas fa-times"></i></button>
+    </div>
+    <form method="post" id="send-request-form">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="request-message">Personal message</label>
+        <textarea id="request-message" name="message" rows="4" class="form-input" placeholder="Introduce yourself and suggest what you can exchange."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Send Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

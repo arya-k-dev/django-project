@@ -1,0 +1,34 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Messages | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Messages</p>
+    <h1>Conversations</h1>
+    <p class="text-slate">Chat with accepted exchange partners.</p>
+  </div>
+</div>
+
+<section class="card inbox-card">
+  <div class="card-body flush">
+    {% for item in conv_data %}
+    <a href="{% url 'conversation' item.conversation.id %}" class="conversation-row">
+      <span class="avatar avatar-md">{{ item.other_user.first_name.0|default:item.other_user.username.0|upper }}</span>
+      <span class="conversation-main">
+        <strong>{{ item.other_user.get_full_name|default:item.other_user.username }}</strong>
+        <small>{{ item.last_message.content|default:"Start a conversation"|truncatechars:80 }}</small>
+      </span>
+      {% if item.unread %}<span class="badge badge-teal">{{ item.unread }}</span>{% endif %}
+    </a>
+    {% empty %}
+    <div class="empty-state">
+      <i class="fas fa-comments"></i>
+      <h3>No conversations yet</h3>
+      <p>Accept an exchange request to start chatting.</p>
+      <a href="{% url 'requests' %}" class="btn btn-primary btn-sm">View Requests</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

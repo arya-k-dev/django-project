@@ -1,0 +1,166 @@
+<article class="session-workflow-card reveal-on-scroll {% if s.phase == 'live_now' %}session-live-card{% endif %}" data-session-phase="{{ s.filter_phase }}">
+  <div class="session-card-top">
+    <div class="session-person">
+      <a href="{% url 'profile_view' s.other_user.username %}" class="avatar avatar-md">
+        {% if s.other_user.profile.avatar %}
+          <img src="{{ s.other_user.profile.avatar.url }}" alt="{{ s.other_user.username }}">
+        {% else %}
+          {{ s.other_user.first_name.0|default:s.other_user.username.0|upper }}
+        {% endif %}
+      </a>
+      <div>
+        <a href="{% url 'profile_view' s.other_user.username %}" class="row-title">{{ s.other_name }}</a>
+        <p class="text-slate small">{% if direction == 'incoming' %}Booked with you{% else %}You booked this session{% endif %}</p>
+      </div>
+    </div>
+    <span class="session-status-badge status-{{ s.phase }}">{{ s.phase_label }}</span>
+  </div>
+
+  <div class="session-time-panel">
+    <div>
+      <span><i class="fas fa-calendar-alt"></i> Date</span>
+      <strong>{{ s.start_time|date:"D, d M Y" }}</strong>
+    </div>
+    <div>
+      <span><i class="fas fa-clock"></i> Time</span>
+      <strong>{{ s.start_time|date:"H:i" }} - {{ s.end_time|date:"H:i" }}</strong>
+    </div>
+    <div>
+      <span><i class="fas fa-hourglass-half"></i> Duration</span>
+      <strong>{{ s.duration }} min</strong>
+    </div>
+  </div>
+
+  <div class="session-countdown" data-countdown data-start="{{ s.start_time|date:'c' }}" data-end="{{ s.end_time|date:'c' }}" data-status="{{ s.status }}">
+    <i class="fas fa-bolt"></i>
+    <span>{{ s.countdown_text|default:"Session history" }}</span>
+  </div>
+
+  {% if s.status == 'accepted' %}
+  <div class="session-live-message {% if s.phase != 'live_now' %}hidden{% endif %}" data-live-message>
+    <i class="fas fa-video"></i>
+    <span>Your session is currently active. Join the meeting and start learning together.</span>
+  </div>
+
+  <div class="session-progress-panel" data-session-progress data-start="{{ s.start_time|date:'c' }}" data-end="{{ s.end_time|date:'c' }}">
+    <div class="session-progress-copy">
+      <span>Session progress</span>
+      <strong data-progress-label>{% if s.phase == 'live_now' %}Live now{% elif s.phase == 'upcoming' %}Not started yet{% else %}Session ended{% endif %}</strong>
+    </div>
+    <div class="session-progress-track" aria-hidden="true">
+      <span data-progress-bar></span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="session-exchange-line">
+    <span>{{ s.skill_offered }}</span>
+    <i class="fas fa-exchange-alt"></i>
+    <span>{{ s.skill_requested }}</span>
+  </div>
+
+  <div class="session-skill-grid">
+    <div>
+      <span>{% if direction == 'incoming' %}They offer{% else %}You offer{% endif %}</span>
+      <strong>{{ s.skill_offered }}</strong>
+    </div>
+    <div>
+      <span>{% if direction == 'incoming' %}They want{% else %}You want{% endif %}</span>
+      <strong>{{ s.skill_requested }}</strong>
+    </div>
+  </div>
+
+  <div class="session-goal">
+    <span><i class="fas fa-bullseye"></i> Today's Goal</span>
+    {% if s.notes %}
+      <p>{{ s.notes|linebreaksbr }}</p>
+    {% else %}
+      <p class="muted">No session goal added yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="session-timeline" data-session-timeline>
+    <span class="done">Accepted</span>
+    <span class="{% if s.phase == 'upcoming' or s.phase == 'live_now' or s.phase == 'completed' %}done{% endif %}">Scheduled</span>
+    <span class="{% if s.phase == 'live_now' %}active{% elif s.phase == 'completed' %}done{% endif %}">Live Now</span>
+    <span class="{% if s.phase == 'completed' %}active done{% endif %}">Completed</span>
+  </div>
+
+  <div class="session-actions">
+    {% if s.can_accept %}
+      <form method="post" action="{% url 'accept_session' s.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Accept</button>
+      </form>
+      <form method="post" action="{% url 'reject_session' s.pk %}" data-confirm="Reject this session request?">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Reject</button>
+      </form>
+    {% endif %}
+
+    {% if s.status == 'accepted' %}
+      <a href="{{ s.meeting_link|default:s.jitsi_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm {% if not s.can_join %}hidden{% endif %}" data-join-action>
+        <i class="fas fa-video"></i> Join Session
+      </a>
+    {% endif %}
+
+    {% if s.status == 'accepted' %}
+      <a href="{{ s.conversation_url }}" class="btn btn-secondary btn-sm"><i class="fas fa-comments"></i> Message User</a>
+    {% endif %}
+
+    {% if s.phase == 'live_now' %}
+      <a href="{% url 'inbox' %}" class="btn btn-secondary btn-sm"><i class="fas fa-flag"></i> Report Issue</a>
+    {% endif %}
+
+    {% if s.can_reschedule %}
+      <button type="button" class="btn btn-secondary btn-sm" data-open-reschedule data-action="{% url 'reschedule_session' s.pk %}" data-date="{{ s.start_time|date:'Y-m-d' }}" data-time="{{ s.start_time|date:'H:i' }}" data-duration="{{ s.duration }}" data-meeting-link="{{ s.meeting_link|default:'' }}">
+        <i class="fas fa-calendar-plus"></i> Reschedule
+      </button>
+    {% endif %}
+
+    {% if s.can_cancel %}
+      <form method="post" action="{% url 'cancel_session' s.pk %}" data-confirm="Cancel this session?">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-ban"></i> Cancel</button>
+      </form>
+    {% endif %}
+
+    {% if s.status == 'accepted' %}
+      <form method="post" action="{% url 'session_complete' s.pk %}" class="{% if not s.can_complete %}hidden{% endif %}" data-complete-action>
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-circle-check"></i> Mark as Completed</button>
+      </form>
+    {% elif s.can_complete %}
+      <form method="post" action="{% url 'session_complete' s.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-circle-check"></i> Mark as Completed</button>
+      </form>
+    {% endif %}
+
+    {% if s.can_mark_missed %}
+      <form method="post" action="{% url 'mark_missed' s.pk %}" data-confirm="Mark this session as missed?">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-triangle-exclamation"></i> Mark as Missed</button>
+      </form>
+    {% endif %}
+
+    {% if s.status == 'completed' and s.has_user_review %}
+      <span class="badge badge-green"><i class="fas fa-check"></i> Review submitted</span>
+    {% endif %}
+  </div>
+
+  {% if s.can_review %}
+    <form method="post" action="{% url 'rate_session' s.pk %}" class="session-review-form">
+      {% csrf_token %}
+      <div class="session-rating-options" aria-label="Rate session">
+        <label><input type="radio" name="rating" value="1" required><span>1</span></label>
+        <label><input type="radio" name="rating" value="2"><span>2</span></label>
+        <label><input type="radio" name="rating" value="3"><span>3</span></label>
+        <label><input type="radio" name="rating" value="4"><span>4</span></label>
+        <label><input type="radio" name="rating" value="5"><span>5</span></label>
+      </div>
+      <textarea name="feedback" class="form-input" rows="3" placeholder="Share feedback about the exchange"></textarea>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-star"></i> Rate & Review</button>
+    </form>
+  {% endif %}
+</article>

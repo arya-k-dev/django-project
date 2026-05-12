@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}Share Skills. Grow Together.{% endblock %}
+
+{% block content %}
+<section class="home-hero page-fade">
+  <div class="hero-copy reveal-on-scroll">
+    <span class="community-badge animate-bounce-in">
+      <i class="fas fa-trophy"></i> Skill exchange community
+    </span>
+    <h1>Share Skills.<br><span>Grow Together.</span></h1>
+    <p>Trade your expertise for the knowledge you have always wanted. No payments, just people helping each other learn.</p>
+    <div class="button-row center">
+      <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">Get Started Free</a>
+      <a href="#categories" class="btn btn-secondary btn-lg">Browse Skills</a>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works" class="home-section how-it-works-section reveal-on-scroll">
+  <div class="section-heading center how-heading">
+    <p class="eyebrow">How It Works</p>
+    <h2>Your path to collaborative learning</h2>
+    <p class="section-description">Connect with mentors and learners through intelligent skill exchange.</p>
+  </div>
+  <div class="how-steps stagger-children">
+    <article class="card feature-card how-step-card reveal-on-scroll">
+      <span class="step-number">01</span>
+      <span class="feature-icon teal"><i class="fas fa-user-plus"></i></span>
+      <h3>Create Profile</h3>
+      <p>List the skills you can teach and the ones you want to learn.</p>
+    </article>
+    <article class="card feature-card how-step-card reveal-on-scroll">
+      <span class="step-number">02</span>
+      <span class="feature-icon navy"><i class="fas fa-wand-magic-sparkles"></i></span>
+      <h3>Match Smartly</h3>
+      <p>Find partners with useful reciprocal skill overlap.</p>
+    </article>
+    <article class="card feature-card how-step-card reveal-on-scroll">
+      <span class="step-number">03</span>
+      <span class="feature-icon coral"><i class="fas fa-comments"></i></span>
+      <h3>Coordinate</h3>
+      <p>Use built-in messaging to schedule and prepare sessions.</p>
+    </article>
+    <article class="card feature-card how-step-card reveal-on-scroll">
+      <span class="step-number">04</span>
+      <span class="feature-icon gold"><i class="fas fa-shield-alt"></i></span>
+      <h3>Build Trust</h3>
+      <p>Rate completed exchanges so the community keeps improving.</p>
+    </article>
+  </div>
+  <div class="how-cta card reveal-on-scroll">
+    <h3>Start exchanging skills today</h3>
+    <div class="button-row center">
+      <a href="{% url 'signup' %}" class="btn btn-primary">Get Started</a>
+      <a href="#categories" class="btn btn-secondary">Explore Skills</a>
+    </div>
+  </div>
+</section>
+
+<section id="categories" class="home-section reveal-on-scroll">
+  <div class="section-heading center categories-heading">
+    <p class="eyebrow">Explore Categories</p>
+    <h2>Find Your Next Skill</h2>
+    <p class="section-description">Discover communities, mentors, and learners across different fields.</p>
+  </div>
+  <div class="category-grid premium-category-grid stagger-children">
+    {% for category in categories %}
+    <a href="{% url 'category_detail' category.slug %}" class="card category-card premium-category-card reveal-on-scroll" aria-label="Explore {{ category.name }}">
+      <span class="category-icon-shell">
+        {% with category.name|lower as category_name %}
+          {% if 'art' in category_name or 'design' in category_name %}
+            <i class="fas fa-palette"></i>
+          {% elif 'business' in category_name %}
+            <i class="fas fa-briefcase"></i>
+          {% elif 'cook' in category_name or 'food' in category_name %}
+            <i class="fas fa-utensils"></i>
+          {% elif 'craft' in category_name %}
+            <i class="fas fa-scissors"></i>
+          {% elif 'language' in category_name %}
+            <i class="fas fa-language"></i>
+          {% elif 'music' in category_name %}
+            <i class="fas fa-music"></i>
+          {% elif 'sport' in category_name or 'fitness' in category_name %}
+            <i class="fas fa-dumbbell"></i>
+          {% elif 'tech' in category_name or 'code' in category_name or 'program' in category_name %}
+            <i class="fas fa-laptop-code"></i>
+          {% else %}
+            <i class="fas fa-layer-group"></i>
+          {% endif %}
+        {% endwith %}
+      </span>
+      <span class="category-card-body">
+        <h3>{{ category.name }}</h3>
+        <p>
+          {% if category.description %}
+            {{ category.description|truncatechars:96 }}
+          {% else %}
+            Explore mentors, learners, and practical sessions in {{ category.name }}.
+          {% endif %}
+        </p>
+        <small>{{ category.active_skill_count }} active skill{{ category.active_skill_count|pluralize }}</small>
+      </span>
+    </a>
+    {% empty %}
+    <a href="{% url 'skill_add' %}" class="card category-card premium-category-card reveal-on-scroll">
+      <span class="category-icon-shell"><i class="fas fa-laptop-code"></i></span>
+      <span class="category-card-body">
+        <h3>Technology</h3>
+        <p>Explore coding, AI, web development, and practical digital skills.</p>
+        <small>Start exploring</small>
+      </span>
+    </a>
+    <a href="{% url 'skill_add' %}" class="card category-card premium-category-card reveal-on-scroll">
+      <span class="category-icon-shell"><i class="fas fa-palette"></i></span>
+      <span class="category-card-body">
+        <h3>Art & Design</h3>
+        <p>Find creative partners for visual design, illustration, and craft.</p>
+        <small>Start exploring</small>
+      </span>
+    </a>
+    <a href="{% url 'skill_add' %}" class="card category-card premium-category-card reveal-on-scroll">
+      <span class="category-icon-shell"><i class="fas fa-language"></i></span>
+      <span class="category-card-body">
+        <h3>Languages</h3>
+        <p>Practice conversation, grammar, writing, and cultural fluency.</p>
+        <small>Start exploring</small>
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+{% if testimonials %}
+<section class="home-section reveal-on-scroll">
+  <div class="section-heading center">
+    <p class="eyebrow">Community Stories</p>
+    <h2>What members say</h2>
+  </div>
+  <div class="feature-grid three">
+    {% for rating in testimonials %}
+    <article class="card testimonial-card reveal-on-scroll">
+      <div class="review-header">
+        <span class="avatar avatar-sm">{{ rating.rater.first_name.0|default:rating.rater.username.0|upper }}</span>
+        <strong>{{ rating.rater.get_full_name|default:rating.rater.username }}</strong>
+      </div>
+      <p>{{ rating.feedback|truncatechars:160 }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

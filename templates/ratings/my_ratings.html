@@ -1,0 +1,82 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}My Ratings | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Ratings</p>
+    <h1>My Ratings</h1>
+    <p class="text-slate">Ratings you have received and given.</p>
+  </div>
+</div>
+
+<div data-tabs class="tabs-shell">
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="tab-received">Received <span class="badge badge-teal">{{ received|length }}</span></button>
+    <button type="button" class="tab-btn" data-tab="tab-given">Given <span class="badge badge-gray">{{ given|length }}</span></button>
+  </div>
+
+  <section id="tab-received" class="tab-pane active">
+    {% if received %}
+      <div class="stack">
+        {% for r in received %}
+        <article class="rating-card card">
+          <span class="avatar avatar-md">{{ r.rater.first_name.0|default:r.rater.username.0|upper }}</span>
+          <div>
+            <div class="row-title-line">
+              <strong>{{ r.rater.get_full_name|default:r.rater.username }}</strong>
+              <span class="text-slate small">{{ r.created_at|date:"M d, Y" }}</span>
+            </div>
+            <div class="stars">
+              {% for i in "12345" %}<i class="fas fa-star {% if forloop.counter > r.score %}muted{% endif %}"></i>{% endfor %}
+              <span>{{ r.score }}/5</span>
+            </div>
+            {% if r.feedback %}<p>{{ r.feedback }}</p>{% endif %}
+            <div class="rating-breakdown">
+              <span>Teaching {{ r.teaching_quality }}/5</span>
+              <span>Communication {{ r.communication }}/5</span>
+              <span>Punctuality {{ r.punctuality }}/5</span>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state card">
+        <i class="fas fa-star"></i>
+        <h3>No ratings yet</h3>
+        <p>Complete skill exchanges to receive ratings from partners.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <section id="tab-given" class="tab-pane">
+    {% if given %}
+      <div class="stack">
+        {% for r in given %}
+        <article class="rating-card card">
+          <span class="avatar avatar-md">{{ r.rated_user.first_name.0|default:r.rated_user.username.0|upper }}</span>
+          <div>
+            <div class="row-title-line">
+              <strong>{{ r.rated_user.get_full_name|default:r.rated_user.username }}</strong>
+              <span class="text-slate small">{{ r.created_at|date:"M d, Y" }}</span>
+            </div>
+            <div class="stars">
+              {% for i in "12345" %}<i class="fas fa-star {% if forloop.counter > r.score %}muted{% endif %}"></i>{% endfor %}
+              <span>{{ r.score }}/5</span>
+            </div>
+            {% if r.feedback %}<p>{{ r.feedback }}</p>{% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state card">
+        <i class="fas fa-pen"></i>
+        <h3>No ratings given</h3>
+        <p>Rate your skill exchange partners after completing exchanges.</p>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

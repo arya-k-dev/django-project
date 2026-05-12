@@ -1,0 +1,184 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Dashboard | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header reveal-on-scroll">
+  <div>
+    <p class="eyebrow">Dashboard</p>
+    <h1>Welcome back, {{ user.first_name|default:user.username }}</h1>
+    <p class="text-slate">Your current skill exchange activity at a glance.</p>
+  </div>
+  <a href="{% url 'skill_add' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Skill</a>
+</div>
+
+<div class="stats-grid stagger-children">
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon teal"><i class="fas fa-chalkboard-user"></i></span>
+    <strong>{{ teach_skills.count }}</strong>
+    <span>Skills I teach</span>
+  </div>
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon navy"><i class="fas fa-graduation-cap"></i></span>
+    <strong>{{ learn_skills.count }}</strong>
+    <span>Skills to learn</span>
+  </div>
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon gold"><i class="fas fa-envelope-open-text"></i></span>
+    <strong>{{ pending_requests.count }}</strong>
+    <span>Pending requests</span>
+  </div>
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon coral"><i class="fas fa-comments"></i></span>
+    <strong>{{ unread_messages }}</strong>
+    <span>Unread messages</span>
+  </div>
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon teal"><i class="fas fa-calendar-alt"></i></span>
+    <strong>{{ pending_sessions_count }}</strong>
+    <span>Pending sessions</span>
+  </div>
+</div>
+
+<div class="content-grid two-one">
+  <section class="card reveal-on-scroll">
+    <div class="card-header horizontal">
+      <div>
+        <h2>Top Matches</h2>
+        <p>People with reciprocal skills.</p>
+      </div>
+      <a href="{% url 'matches' %}" class="text-link">View all</a>
+    </div>
+    <div class="card-body">
+      {% if matches %}
+        <div class="stack">
+          {% for m in matches|slice:":3" %}
+          <article class="match-row reveal-on-scroll">
+            <a href="{% url 'profile_view' m.user.username %}" class="avatar avatar-md">
+              {% if m.profile and m.profile.avatar %}
+                <img src="{{ m.profile.avatar.url }}" alt="{{ m.user.username }}">
+              {% else %}
+                {{ m.user.first_name.0|default:m.user.username.0|upper }}
+              {% endif %}
+            </a>
+            <div class="match-row-main">
+              <div class="row-title">{{ m.user.get_full_name|default:m.user.username }}</div>
+              <div class="match-skill-lines">
+                {% if m.they_teach_me %}
+                  <span><strong>They teach you:</strong> {{ m.they_teach_me|join:", " }}</span>
+                {% endif %}
+                {% if m.i_teach_them %}
+                  <span><strong>You teach them:</strong> {{ m.i_teach_them|join:", " }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="match-row-actions">
+              <span class="badge badge-teal">{{ m.score }} pts</span>
+              <form method="post" action="{% url 'send_request' m.user.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-sm">Connect</button>
+              </form>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state compact">
+          <i class="fas fa-search"></i>
+          <h3>No matches yet</h3>
+          <p>Add at least one teaching skill and one learning goal to unlock recommendations.</p>
+          <a href="{% url 'skill_add' %}" class="btn btn-primary btn-sm">Add skills</a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card reveal-on-scroll">
+    <div class="card-header">
+      <h2>Recent Activity</h2>
+      <p>Requests you sent or received.</p>
+    </div>
+    <div class="card-body">
+      {% if sent_requests or received_requests %}
+        <div class="timeline-list">
+          {% for req in received_requests|slice:":3" %}
+          <div class="timeline-item reveal-on-scroll">
+            <span class="timeline-dot in"></span>
+            <div>
+              <strong>From {{ req.sender.get_full_name|default:req.sender.username }}</strong>
+              <p>{{ req.get_status_display }} - {{ req.created_at|timesince }} ago</p>
+            </div>
+          </div>
+          {% endfor %}
+          {% for req in sent_requests|slice:":3" %}
+          <div class="timeline-item reveal-on-scroll">
+            <span class="timeline-dot out"></span>
+            <div>
+              <strong>Sent to {{ req.receiver.get_full_name|default:req.receiver.username }}</strong>
+              <p>{{ req.get_status_display }} - {{ req.created_at|timesince }} ago</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state compact">
+          <i class="fas fa-stream"></i>
+          <h3>No activity yet</h3>
+          <p>Your exchange requests will show up here.</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<!-- Upcoming Sessions -->
+<section class="card reveal-on-scroll" style="margin-top:1.5rem;">
+  <div class="card-header horizontal">
+    <div>
+      <h2>Upcoming Sessions</h2>
+      <p>Accepted sessions you are part of.</p>
+    </div>
+    <a href="{% url 'sessions_dashboard' %}" class="text-link">View all</a>
+  </div>
+  <div class="card-body flush">
+    {% if upcoming_sessions %}
+      {% for s in upcoming_sessions %}
+      <article class="request-row reveal-on-scroll">
+        <div class="request-row-main">
+          {% if s.sender == user %}
+            <a href="{% url 'profile_view' s.receiver.username %}" class="avatar avatar-md">
+              {{ s.receiver.first_name.0|default:s.receiver.username.0|upper }}
+            </a>
+            <div>
+              <a href="{% url 'profile_view' s.receiver.username %}" class="row-title">
+                {{ s.receiver.get_full_name|default:s.receiver.username }}
+              </a>
+          {% else %}
+            <a href="{% url 'profile_view' s.sender.username %}" class="avatar avatar-md">
+              {{ s.sender.first_name.0|default:s.sender.username.0|upper }}
+            </a>
+            <div>
+              <a href="{% url 'profile_view' s.sender.username %}" class="row-title">
+                {{ s.sender.get_full_name|default:s.sender.username }}
+              </a>
+          {% endif %}
+              <p class="text-slate small">
+                <i class="fas fa-calendar-alt"></i>
+                {{ s.start_time|date:"D, d M Y" }} at {{ s.start_time|date:"H:i" }}
+                - {{ s.duration }} min
+              </p>
+              {% if s.skill_offered %}<p class="text-slate small"><i class="fas fa-chalkboard-user"></i> {{ s.skill_offered }}</p>{% endif %}
+            </div>
+        </div>
+        <span class="badge badge-green">{{ s.get_status_display }}</span>
+      </article>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state compact">
+        <i class="fas fa-calendar-check"></i>
+        <h3>No upcoming sessions</h3>
+        <p>Book sessions from your <a href="{% url 'inbox' %}" class="text-link">messages</a> or connected profiles.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

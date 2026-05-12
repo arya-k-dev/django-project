@@ -1,0 +1,29 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Matching{% endblock %}
+
+{% block main_content %}
+<div class="tabs reveal-on-scroll" data-tabs>
+    <button class="tab-btn active" data-tab="matches-tab"><i class="fas fa-handshake"></i> Matches</button>
+    <button class="tab-btn" data-tab="requests-tab"><i class="fas fa-envelope"></i> Requests</button>
+</div>
+
+<!-- Matches Tab -->
+<div id="matches-tab" class="tab-pane active">
+    {% if matches %}
+    <div style="display: grid; gap: 20px;">
+        {% for match in matches %}
+        <div class="match-card reveal-on-scroll">
+            <!-- match content – same as your existing matches.html, but with icons instead of emojis -->
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state reveal-on-scroll">No matches yet. Add more skills.</div>
+    {% endif %}
+</div>
+
+<!-- Requests Tab -->
+<div id="requests-tab" class="tab-pane">
+    <!-- Show both received and sent requests, exactly as in your requests.html -->
+</div>
+{% endblock %}

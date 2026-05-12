@@ -1,0 +1,122 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Edit Profile | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Profile</p>
+    <h1>Edit Profile</h1>
+    <p class="text-slate">Update your public profile, links, and exchange preferences.</p>
+  </div>
+  <a href="{% url 'profile_view' user.username %}" class="btn btn-secondary">Back to profile</a>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="profile-form" class="form-stack" novalidate>
+  {% csrf_token %}
+  <div class="content-grid two">
+    <section class="card">
+      <div class="card-header">
+        <h2>Public profile</h2>
+        <p>Help potential exchange partners understand who you are.</p>
+      </div>
+      <div class="card-body form-stack">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.avatar.id_for_label }}">Profile photo</label>
+          {{ form.avatar }}
+          <p class="form-help">Upload a clear JPG or PNG profile image.</p>
+          {% for error in form.avatar.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.bio.id_for_label }}">Bio</label>
+          {{ form.bio }}
+          <p class="form-help">Share your interests, teaching style, and learning goals.</p>
+          {% for error in form.bio.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
+          {{ form.location }}
+          <p class="form-help">City, region, or remote.</p>
+          {% for error in form.location.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.availability.id_for_label }}">General availability</label>
+          {{ form.availability }}
+          {% for error in form.availability.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Links and preferences</h2>
+        <p>Optional details that make coordination easier.</p>
+      </div>
+      <div class="card-body form-stack">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.linkedin_url.id_for_label }}">LinkedIn URL</label>
+          {{ form.linkedin_url }}
+          {% for error in form.linkedin_url.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.website_url.id_for_label }}">Website or portfolio URL</label>
+          {{ form.website_url }}
+          {% for error in form.website_url.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-grid two">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.response_rate.id_for_label }}">Response rate (%)</label>
+            {{ form.response_rate }}
+            {% for error in form.response_rate.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.available_slots.id_for_label }}">Available slots</label>
+            {{ form.available_slots }}
+            {% for error in form.available_slots.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.timeline_milestones_json.id_for_label }}">Learning journey milestones</label>
+          {{ form.timeline_milestones_json }}
+          <p class="form-help">Optional JSON. Example: [{"date": "Jan 2026", "text": "Joined SkillSphere"}]</p>
+          <div id="timeline-json-error" class="form-error hidden"></div>
+          {% for error in form.timeline_milestones_json.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="form-actions">
+    <a href="{% url 'profile_view' user.username %}" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('profile-form');
+    const jsonField = document.querySelector('[name="timeline_milestones_json"]');
+    const errorBox = document.getElementById('timeline-json-error');
+    if (!form || !jsonField || !errorBox) return;
+
+    form.addEventListener('submit', function (event) {
+      const value = jsonField.value.trim();
+      errorBox.classList.add('hidden');
+      errorBox.textContent = '';
+      if (!value) return;
+
+      const normalized = value.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+      jsonField.value = normalized;
+      try {
+        JSON.parse(normalized);
+      } catch (error) {
+        event.preventDefault();
+        errorBox.textContent = 'Invalid JSON. Use straight double-quotes and remove trailing commas.';
+        errorBox.classList.remove('hidden');
+        jsonField.focus();
+      }
+    });
+  });
+</script>
+{% endblock %}

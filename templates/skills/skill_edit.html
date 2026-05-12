@@ -1,0 +1,65 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Edit Skill | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Skills</p>
+    <h1>Edit {{ user_skill.skill.name }}</h1>
+    <p class="text-slate">Update your level, experience, or description.</p>
+  </div>
+  <a href="{% url 'skill_manage' %}" class="btn btn-secondary">Back to skills</a>
+</div>
+
+<section class="card narrow-card">
+  <div class="card-body">
+    <form method="post" class="form-stack" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="skill" id="edit-skill-id" value="{{ user_skill.skill.id }}">
+      <input type="hidden" name="skill_type" value="{{ user_skill.skill_type }}">
+
+      <div class="form-group">
+        <label class="form-label" for="edit-skill-name">Skill name</label>
+        <input id="edit-skill-name" type="text" name="skill_name" class="form-input" value="{{ form.skill_name.value|default:user_skill.skill.name }}" autocomplete="off">
+        {% for error in form.skill.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="form-grid two">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.level.id_for_label }}">Level</label>
+          {{ form.level }}
+          {% for error in form.level.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.years_experience.id_for_label }}">Years of experience</label>
+          {{ form.years_experience }}
+          {% for error in form.years_experience.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        {% for error in form.description.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="form-error-box">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-actions">
+        <a href="{% url 'skill_manage' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    initSkillAutocomplete('edit-skill-name', 'edit-skill-id');
+  });
+</script>
+{% endblock %}

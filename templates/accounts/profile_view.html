@@ -1,0 +1,398 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }} | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="profile-shell">
+  <section class="profile-hero card reveal-on-scroll">
+    <div class="profile-cover"></div>
+    <div class="profile-hero-body">
+      <div class="profile-main-row">
+        <div class="avatar avatar-xl profile-avatar">
+          {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="{{ profile_user.username }}">
+          {% else %}
+            {{ profile_user.first_name.0|default:profile_user.username.0|upper }}
+          {% endif %}
+        </div>
+        <div class="profile-actions">
+          {% if is_own_profile %}
+            <a href="{% url 'profile_edit' %}" class="btn btn-secondary"><i class="fas fa-edit"></i> Edit Profile</a>
+            <a href="{% url 'skill_manage' %}" class="btn btn-primary"><i class="fas fa-layer-group"></i> Manage Skills</a>
+          {% elif request.user.is_authenticated %}
+            {% if connection_status == None %}
+              <button type="button" class="btn btn-primary" data-open-profile-request-modal>
+                <i class="fas fa-handshake"></i> Connect
+              </button>
+            {% elif connection_status == 'pending' %}
+              <span class="badge badge-gold"><i class="fas fa-clock"></i> Request pending</span>
+            {% elif connection_status == 'accepted' %}
+              {% if conversation %}
+                <a href="{% url 'conversation' conversation.id %}" class="btn btn-primary"><i class="fas fa-comment"></i> Message</a>
+                <button type="button" class="btn btn-secondary"
+                  id="open-book-session-btn"
+                  data-receiver-id="{{ profile_user.id }}"
+                  data-receiver-name="{{ profile_user.get_full_name|default:profile_user.username }}"
+                  data-skill-offered=""
+                  data-skill-wanted="">
+                  <i class="fas fa-calendar-plus"></i> Book Session
+                </button>
+              {% else %}
+                <a href="{% url 'inbox' %}" class="btn btn-primary"><i class="fas fa-comment"></i> Messages</a>
+              {% endif %}
+            {% endif %}
+          {% else %}
+            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Log in to connect</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="profile-title-block">
+        <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+        <p>@{{ profile_user.username }}</p>
+      </div>
+
+      {% if profile.bio %}
+        <p class="profile-bio">{{ profile.bio }}</p>
+      {% endif %}
+
+      <div class="info-chip-row">
+        {% if profile.location %}<span class="info-chip"><i class="fas fa-map-marker-alt"></i> {{ profile.location }}</span>{% endif %}
+        <span class="info-chip"><i class="fas fa-clock"></i> {{ profile.get_availability_display|default:"Availability not set" }}</span>
+        <span class="info-chip"><i class="fas fa-calendar-alt"></i> Joined {{ profile_user.date_joined|date:"M Y" }}</span>
+        {% if profile.linkedin_url %}<a href="{{ profile.linkedin_url }}" target="_blank" rel="noopener" class="info-chip"><i class="fab fa-linkedin"></i> LinkedIn</a>{% endif %}
+        {% if profile.website_url %}<a href="{{ profile.website_url }}" target="_blank" rel="noopener" class="info-chip"><i class="fas fa-globe"></i> Website</a>{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div class="content-grid two-one">
+    <div class="stack">
+      <section class="card reveal-on-scroll">
+        <div class="card-header horizontal">
+          <div>
+            <h2>Skills I Can Teach</h2>
+            <p>Expertise this member offers.</p>
+          </div>
+          {% if is_own_profile %}<a href="{% url 'skill_add' %}" class="text-link">Add skill</a>{% endif %}
+        </div>
+        <div class="card-body">
+          {% if teach_skills %}
+            <div class="skill-card-grid">
+              {% for us in teach_skills %}
+              <article class="skill-card teach reveal-on-scroll">
+                <div class="skill-card-top">
+                  <h3>{{ us.skill.name }}</h3>
+                  {% if is_own_profile %}<a href="{% url 'skill_edit' us.id %}" class="icon-link" aria-label="Edit {{ us.skill.name }}"><i class="fas fa-pen"></i></a>{% endif %}
+                </div>
+                {% if us.level %}<span class="badge badge-teal">{{ us.get_level_display }}</span>{% endif %}
+                {% if us.description %}<p>{{ us.description|truncatechars:120 }}</p>{% endif %}
+              </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state compact">
+              <i class="fas fa-book-open"></i>
+              <h3>No teaching skills yet</h3>
+              {% if is_own_profile %}<a href="{% url 'skill_add' %}" class="btn btn-primary btn-sm">Add your first skill</a>{% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="card reveal-on-scroll">
+        <div class="card-header">
+          <h2>Skills I Want to Learn</h2>
+          <p>Goals this member is working toward.</p>
+        </div>
+        <div class="card-body">
+          {% if learn_skills %}
+            <div class="skill-card-grid">
+              {% for us in learn_skills %}
+              <article class="skill-card learn reveal-on-scroll">
+                <div class="skill-card-top">
+                  <h3>{{ us.skill.name }}</h3>
+                  {% if is_own_profile %}<a href="{% url 'skill_edit' us.id %}" class="icon-link" aria-label="Edit {{ us.skill.name }}"><i class="fas fa-pen"></i></a>{% endif %}
+                </div>
+                {% if us.level %}<span class="badge badge-navy">{{ us.get_level_display }}</span>{% endif %}
+                {% if us.description %}<p>{{ us.description|truncatechars:120 }}</p>{% endif %}
+              </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state compact">
+              <i class="fas fa-search"></i>
+              <h3>No learning goals yet</h3>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="card reveal-on-scroll">
+        <div class="card-header horizontal">
+          <div>
+            <h2>Reviews</h2>
+            <p>{{ ratings|length }} recent review{{ ratings|length|pluralize }}</p>
+          </div>
+        </div>
+        <div class="card-body">
+          {% if ratings %}
+            <div class="review-list">
+              {% for rating in ratings %}
+              <article class="review-card reveal-on-scroll">
+                <div class="review-header">
+                  <span class="avatar avatar-sm">{{ rating.rater.first_name.0|default:rating.rater.username.0|upper }}</span>
+                  <div>
+                    <strong>{{ rating.rater.get_full_name|default:rating.rater.username }}</strong>
+                    <div class="stars" aria-label="{{ rating.score }} out of 5 stars">
+                      {% for i in "12345" %}
+                        <i class="fas fa-star {% if forloop.counter > rating.score %}muted{% endif %}"></i>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                {% if rating.feedback %}<p>{{ rating.feedback|truncatechars:140 }}</p>{% endif %}
+              </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state compact">
+              <i class="fas fa-comment-slash"></i>
+              <h3>No reviews yet</h3>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="card reveal-on-scroll">
+        <div class="card-header">
+          <h2>Availability</h2>
+          <p>Preferred time windows.</p>
+        </div>
+        <div class="card-body">
+          <div class="detail-list">
+            <div><span>General</span><strong>{{ profile.get_availability_display|default:"Not specified" }}</strong></div>
+            {% if profile.available_slots %}<div><span>Time slots</span><strong>{{ profile.available_slots|linebreaksbr }}</strong></div>{% endif %}
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+{% if request.user.is_authenticated and not is_own_profile and connection_status == None %}
+<div id="profile-request-modal" class="modal-backdrop hidden" data-modal>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Connect with {{ profile_user.first_name|default:profile_user.username }}</h3>
+      <button type="button" class="icon-button" data-close-modal aria-label="Close modal"><i class="fas fa-times"></i></button>
+    </div>
+    <form method="post" action="{% url 'send_request' profile_user.id %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="profile-request-message" class="form-label">Personal message</label>
+        <textarea id="profile-request-message" name="message" rows="3" class="form-input" placeholder="Hi, I would love to exchange skills with you."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Send Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if request.user.is_authenticated and not is_own_profile and connection_status == 'accepted' and conversation %}
+<!-- Book Session Modal (profile page) -->
+<div id="book-session-modal" class="modal-backdrop hidden" data-modal>
+  <div class="modal-box session-booking-box" style="max-width:520px;">
+    <div class="modal-header">
+      <h3><i class="fas fa-calendar-plus"></i> Book a Session with {{ profile_user.first_name|default:profile_user.username }}</h3>
+      <button type="button" class="icon-button" data-close-modal aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="session-form-error" class="form-error-box hidden"></div>
+    <div id="session-form-success" class="hidden" style="padding:1.5rem;text-align:center;">
+      <i class="fas fa-check-circle" style="font-size:2.5rem;color:var(--success);"></i>
+      <p style="margin-top:.75rem;font-weight:700;">Session request sent!</p>
+      <p class="text-slate small">They will be notified to accept or reject.</p>
+    </div>
+    <div id="session-form-body">
+      <div class="form-stack" style="padding:0 0 1rem;">
+        <div class="form-grid two">
+          <div class="form-group">
+            <label class="form-label" for="sess-skill-offered">Skill you offer</label>
+            <input type="text" id="sess-skill-offered" class="form-input" placeholder="e.g. Python…" maxlength="200">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sess-skill-wanted">Skill you want</label>
+            <input type="text" id="sess-skill-wanted" class="form-input" placeholder="e.g. Spanish…" maxlength="200">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Select Date</label>
+          <div id="session-calendar" class="session-calendar"></div>
+        </div>
+        <div class="form-group" id="time-slot-section" style="display:none;">
+          <label class="form-label">Select Time</label>
+          <div id="session-period-tabs" class="session-period-tabs" aria-label="Time period"></div>
+          <div id="session-time-slots" class="session-time-slots"></div>
+        </div>
+        <div class="form-grid two">
+          <div class="form-group">
+            <label class="form-label" for="sess-duration">Duration</label>
+            <select id="sess-duration" class="form-input">
+              <option value="30">30 min</option>
+              <option value="60" selected>1 hour</option>
+              <option value="90">1.5 hours</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Selected</label>
+            <input type="text" id="sess-selected-time" class="form-input" readonly placeholder="Pick above">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="sess-notes">Notes</label>
+          <textarea id="sess-notes" class="form-input" rows="2" placeholder="Topics, platform, etc."></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <div id="session-action-error" class="form-error-box hidden" aria-live="polite"></div>
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="button" class="btn btn-primary" id="submit-session-btn">
+          <i class="fas fa-paper-plane"></i> Book Session
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.session-calendar{border:1px solid var(--border);border-radius:var(--radius-lg);padding:.75rem;background:var(--surface-muted);}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;}
+.cal-day-name{font-size:.7rem;font-weight:700;color:var(--slate);padding:.2rem 0;}
+.cal-day{border-radius:var(--radius);padding:.4rem .2rem;font-size:.85rem;}
+.cal-day.past{color:var(--slate-300);}
+.cal-day.available{cursor:pointer;transition:background .15s;}
+.cal-day.available:hover{background:var(--lavender-100);}
+.cal-day.selected{background:var(--lavender-500)!important;color:#fff;font-weight:700;}
+#book-session-modal.modal-backdrop{align-items:center;padding:1rem;}
+.session-booking-box{max-height:calc(100vh - 2rem);overflow-y:auto;overscroll-behavior:contain;}
+.session-booking-box #session-form-body{overflow:visible;}
+.session-booking-box .modal-actions{position:sticky;bottom:0;z-index:2;background:#fff;border-top:1px solid var(--border);padding:1rem 0 0;margin-top:1rem;box-shadow:0 -8px 18px rgba(255,255,255,.9);}
+.session-booking-box #session-action-error{flex:1 1 100%;margin:0;padding:.65rem .8rem;}
+@media (max-width:640px){
+  #book-session-modal.modal-backdrop{align-items:flex-start;padding:.75rem;}
+  .session-booking-box{width:100%;max-height:calc(100vh - 1.5rem);}
+}
+.session-period-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:.5rem;}
+.period-tab{border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--slate);font-size:.78rem;font-weight:700;padding:.38rem .45rem;cursor:pointer;transition:all .15s;}
+.period-tab.active,.period-tab:hover{background:var(--lavender-500);border-color:var(--lavender-500);color:#fff;}
+.session-time-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;overflow:visible;}
+.time-slot{border:1px solid var(--border);border-radius:var(--radius);background:#fff;padding:.3rem .25rem;font-size:.78rem;cursor:pointer;transition:all .15s;}
+.time-slot:hover:not(.disabled){border-color:var(--lavender-500);background:var(--lavender-50);}
+.time-slot.selected{background:var(--lavender-500);color:#fff;border-color:var(--lavender-500);}
+.time-slot.disabled{color:var(--slate-300);background:var(--slate-50);cursor:not-allowed;text-decoration:line-through;}
+@media (max-width:640px){.session-time-slots{grid-template-columns:repeat(3,1fr);}}
+</style>
+
+<script>
+(function(){
+  const openBtn   = document.getElementById('open-book-session-btn');
+  const modal     = document.getElementById('book-session-modal');
+  const submitBtn = document.getElementById('submit-session-btn');
+  const errBox    = document.getElementById('session-form-error');
+  const actionErr = document.getElementById('session-action-error');
+  const successEl = document.getElementById('session-form-success');
+  const formBody  = document.getElementById('session-form-body');
+  if(!openBtn||!modal) return;
+
+  const receiverId = openBtn.dataset.receiverId;
+  let bookedSlots=[], selectedDate=null, selectedHour=null, activePeriod='morning', calYear, calMonth;
+
+  openBtn.addEventListener('click',function(){
+    modal.classList.remove('hidden');
+    document.body.style.overflow='hidden';
+    modal.scrollTop=0;
+    errBox.classList.add('hidden');
+    actionErr.classList.add('hidden');
+    successEl.classList.add('hidden');
+    formBody.style.display='';
+    submitBtn.disabled=false;
+    submitBtn.innerHTML='<i class="fas fa-paper-plane"></i> Book Session';
+    selectedDate=null; selectedHour=null; activePeriod='morning';
+    document.getElementById('sess-selected-time').value='';
+    document.getElementById('time-slot-section').style.display='none';
+    const csrf=document.cookie.match(/csrftoken=([^;]+)/)?.[1]||'';
+    fetch('/sessions/api/slots/'+receiverId+'/',{headers:{'X-CSRFToken':csrf}})
+      .then(r=>r.json()).then(d=>{bookedSlots=(d.booked_slots||[]).map(s=>({start:new Date(s.start),end:new Date(s.end)}));})
+      .catch(()=>{bookedSlots=[];}).finally(()=>{const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();renderCalendar(calYear,calMonth);});
+  });
+  modal.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click',closeModal));
+  modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
+
+  function closeModal(){modal.classList.add('hidden');document.body.style.overflow='';selectedDate=null;selectedHour=null;activePeriod='morning';errBox.classList.add('hidden');actionErr.classList.add('hidden');document.getElementById('sess-selected-time').value='';document.getElementById('time-slot-section').style.display='none';}
+
+  function renderCalendar(year,month){
+    const cal=document.getElementById('session-calendar');
+    const today=new Date();today.setHours(0,0,0,0);
+    const names=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const firstDay=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate();
+    let cells='';
+    for(let i=0;i<firstDay;i++)cells+='<div class="cal-day empty"></div>';
+    for(let d=1;d<=days;d++){const dt=new Date(year,month,d);cells+=`<div class="cal-day ${dt<today?'past':'available'}" data-day="${d}">${d}</div>`;}
+    cal.innerHTML=`<div class="cal-nav"><button type="button" class="btn btn-secondary btn-sm" id="cal-prev">&#8249;</button><strong>${names[month]} ${year}</strong><button type="button" class="btn btn-secondary btn-sm" id="cal-next">&#8250;</button></div><div class="cal-grid">${['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-day-name">${d}</div>`).join('')}${cells}</div>`;
+    cal.querySelectorAll('.cal-day.available').forEach(c=>{c.addEventListener('click',function(){cal.querySelectorAll('.cal-day').forEach(x=>x.classList.remove('selected'));this.classList.add('selected');selectedDate=new Date(year,month,parseInt(this.dataset.day));selectedHour=null;activePeriod='morning';document.getElementById('sess-selected-time').value='';renderTimeSlots();});});
+    document.getElementById('cal-prev').addEventListener('click',()=>{if(calMonth===0){calYear--;calMonth=11;}else{calMonth--;}renderCalendar(calYear,calMonth);});
+    document.getElementById('cal-next').addEventListener('click',()=>{if(calMonth===11){calYear++;calMonth=0;}else{calMonth++;}renderCalendar(calYear,calMonth);});
+  }
+
+  function renderTimeSlots(){
+    const sec=document.getElementById('time-slot-section'),grid=document.getElementById('session-time-slots'),tabs=document.getElementById('session-period-tabs');
+    if(!selectedDate){sec.style.display='none';return;}sec.style.display='';
+    const periods={morning:{label:'Morning',start:7,end:11},afternoon:{label:'Afternoon',start:12,end:15},evening:{label:'Evening',start:16,end:21}};
+    tabs.innerHTML=Object.entries(periods).map(([key,p])=>`<button type="button" class="period-tab${activePeriod===key?' active':''}" data-period="${key}">${p.label}</button>`).join('');
+    tabs.querySelectorAll('.period-tab').forEach(t=>{t.addEventListener('click',function(){activePeriod=this.dataset.period;renderTimeSlots();});});
+    const dur=parseInt(document.getElementById('sess-duration').value)||60,now=new Date();let html='';
+    const period=periods[activePeriod]||periods.morning;
+    for(let h=period.start;h<=period.end;h++){for(let m=0;m<60;m+=30){const s=new Date(selectedDate);s.setHours(h,m,0,0);const e=new Date(s.getTime()+dur*60000);const dis=s<=now||bookedSlots.some(b=>s<b.end&&b.start<e);const hh=String(h).padStart(2,'0'),mm=String(m).padStart(2,'0'),t=`${hh}:${mm}`;html+=`<button type="button" class="time-slot${dis?' disabled':''}${selectedHour===t?' selected':''}" data-time="${t}"${dis?' disabled':''}>${t}</button>`;}}
+    grid.innerHTML=html;
+    grid.querySelectorAll('.time-slot:not(.disabled)').forEach(b=>{b.addEventListener('click',function(){grid.querySelectorAll('.time-slot').forEach(x=>x.classList.remove('selected'));this.classList.add('selected');selectedHour=this.dataset.time;const disp=selectedDate.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});document.getElementById('sess-selected-time').value=`${disp} at ${selectedHour}`;});});
+  }
+
+  document.getElementById('sess-duration').addEventListener('change',()=>{selectedHour=null;document.getElementById('sess-selected-time').value='';renderTimeSlots();});
+
+  submitBtn.addEventListener('click',function(){
+    if(submitBtn.disabled) return;
+    errBox.classList.add('hidden');
+    actionErr.classList.add('hidden');
+    const offeredEl=document.getElementById('sess-skill-offered');
+    const wantedEl=document.getElementById('sess-skill-wanted');
+    const offered=offeredEl.value.trim(),wanted=wantedEl.value.trim();
+    if(!offered){showError('Please enter the skill you can offer.',offeredEl);return;}
+    if(!wanted){showError('Please enter the skill you want to learn.',wantedEl);return;}
+    if(!selectedDate||!selectedHour){showError('Please select a date and time.',document.getElementById('session-calendar'));return;}
+    const [hh,mm]=selectedHour.split(':');const dt=new Date(selectedDate);dt.setHours(parseInt(hh),parseInt(mm),0,0);
+    const pad=n=>String(n).padStart(2,'0');
+    const offset=-dt.getTimezoneOffset(),sign=offset>=0?'+':'-',oh=pad(Math.floor(Math.abs(offset)/60)),om=pad(Math.abs(offset)%60);
+    const sched=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}:00${sign}${oh}:${om}`;
+    submitBtn.disabled=true;submitBtn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Sending...';
+    const csrf=document.cookie.match(/csrftoken=([^;]+)/)?.[1]||'';
+    fetch('/sessions/api/create/',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRFToken':csrf},body:JSON.stringify({receiver_id:parseInt(receiverId),scheduled_at:sched,duration:parseInt(document.getElementById('sess-duration').value),skill_offered:offered,skill_wanted:wanted,notes:document.getElementById('sess-notes').value.trim()})})
+    .then(r=>r.json()).then(d=>{if(d.ok){formBody.style.display='none';successEl.classList.remove('hidden');setTimeout(closeModal,2500);}else{showError(d.error||'Error.');submitBtn.disabled=false;submitBtn.innerHTML='<i class="fas fa-paper-plane"></i> Book Session';}})
+    .catch(()=>{showError('Network error.');submitBtn.disabled=false;submitBtn.innerHTML='<i class="fas fa-paper-plane"></i> Book Session';});
+  });
+  function showError(message,target){
+    errBox.textContent=message;
+    actionErr.textContent=message;
+    errBox.classList.remove('hidden');
+    actionErr.classList.remove('hidden');
+    if(target&&target.focus)target.focus({preventScroll:true});
+    (target||errBox).scrollIntoView({behavior:'smooth',block:'center'});
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

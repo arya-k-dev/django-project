@@ -1,0 +1,80 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Rate {{ rated_user.get_full_name|default:rated_user.username }} | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Ratings</p>
+    <h1>Rate Your Exchange</h1>
+    <p class="text-slate">How was your skill exchange with <strong>{{ rated_user.get_full_name|default:rated_user.username }}</strong>?</p>
+  </div>
+</div>
+
+<section class="card narrow-card">
+  <div class="card-header horizontal">
+    <div class="request-row-main">
+      <span class="avatar avatar-md">{{ rated_user.first_name.0|default:rated_user.username.0|upper }}</span>
+      <div>
+        <h2>{{ rated_user.get_full_name|default:rated_user.username }}</h2>
+        <p>@{{ rated_user.username }}</p>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" class="card-body form-stack">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label class="form-label">Overall rating</label>
+      <div class="star-rating-input">
+        {% for i in "54321" %}
+          <input type="radio" name="score" id="score{{ i }}" value="{{ i }}" {% if i == '5' %}checked{% endif %} required>
+          <label for="score{{ i }}" title="{{ i }} stars"><i class="fas fa-star"></i></label>
+        {% endfor %}
+      </div>
+      {% for error in form.score.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    <div class="form-grid three">
+      <div class="form-group">
+        <label class="form-label">Teaching quality</label>
+        <div class="star-rating-input small-stars">
+          {% for i in "54321" %}
+            <input type="radio" name="teaching_quality" id="tq{{ i }}" value="{{ i }}" {% if i == '5' %}checked{% endif %} required>
+            <label for="tq{{ i }}"><i class="fas fa-star"></i></label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Communication</label>
+        <div class="star-rating-input small-stars">
+          {% for i in "54321" %}
+            <input type="radio" name="communication" id="comm{{ i }}" value="{{ i }}" {% if i == '5' %}checked{% endif %} required>
+            <label for="comm{{ i }}"><i class="fas fa-star"></i></label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Punctuality</label>
+        <div class="star-rating-input small-stars">
+          {% for i in "54321" %}
+            <input type="radio" name="punctuality" id="punct{{ i }}" value="{{ i }}" {% if i == '5' %}checked{% endif %} required>
+            <label for="punct{{ i }}"><i class="fas fa-star"></i></label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="{{ form.feedback.id_for_label }}">Written feedback</label>
+      {{ form.feedback }}
+      {% for error in form.feedback.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    <div class="form-actions">
+      <a href="{% url 'dashboard' %}" class="btn btn-secondary">Skip for now</a>
+      <button type="submit" class="btn btn-primary">Submit Rating</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

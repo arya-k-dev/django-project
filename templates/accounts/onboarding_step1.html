@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}Step 1 of 3 - Profile Setup | SkillSphere{% endblock %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="onboarding-layout">
+  <aside class="onboarding-panel">
+    <a href="{% url 'home' %}" class="brand-link">
+      <span class="brand-mark"><i class="fas fa-exchange-alt"></i></span>
+      <span class="brand-name">SkillSphere</span>
+    </a>
+    <div class="step-progress" aria-label="Step 1 of 3">
+      <span class="active">1</span>
+      <b></b>
+      <span>2</span>
+      <b></b>
+      <span>3</span>
+    </div>
+    <h1>Tell us about yourself.</h1>
+    <p>Your profile helps other members understand your background, availability, and exchange style.</p>
+  </aside>
+
+  <section class="onboarding-card card page-fade">
+    <div class="card-header">
+      <p class="eyebrow">Step 1 of 3</p>
+      <h2>Profile Basics</h2>
+      <p>Start with the details people see before they connect with you.</p>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="form-stack" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" for="{{ form.bio.id_for_label }}">Bio</label>
+          {{ form.bio }}
+          <p class="form-help">Tell people what you are passionate about and what you hope to learn.</p>
+          {% for error in form.bio.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-grid two">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
+            {{ form.location }}
+            {% for error in form.location.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.availability.id_for_label }}">Availability</label>
+            {{ form.availability }}
+            {% for error in form.availability.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.avatar.id_for_label }}">Profile photo</label>
+          {{ form.avatar }}
+          <p class="form-help">Optional, but a clear photo helps build trust.</p>
+          {% for error in form.avatar.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-actions">
+          <a href="{% url 'skip_onboarding' %}" class="btn btn-secondary">Skip for now</a>
+          <button type="submit" class="btn btn-primary">Continue</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[method="post"]');
+    const continueBtn = form.querySelector('button[type="submit"]');
+    
+    if (form && continueBtn) {
+        form.addEventListener('submit', function(e) {
+            // Clear previous errors
+            const existingErrors = form.querySelectorAll('.form-error');
+            existingErrors.forEach(error => error.remove());
+            
+            // Validate required fields
+            const bio = form.querySelector('#id_bio');
+            const location = form.querySelector('#id_location');
+            const availability = form.querySelector('#id_availability');
+            
+            let isValid = true;
+            
+            // Bio validation (optional but if filled, should have minimum length)
+            if (bio && bio.value.trim() && bio.value.trim().length < 10) {
+                const error = document.createElement('div');
+                error.className = 'form-error';
+                error.textContent = 'Bio should be at least 10 characters long if provided.';
+                bio.parentNode.appendChild(error);
+                isValid = false;
+            }
+            
+            // Location validation (optional but if filled, should have minimum length)
+            if (location && location.value.trim() && location.value.trim().length < 2) {
+                const error = document.createElement('div');
+                error.className = 'form-error';
+                error.textContent = 'Please enter a valid location.';
+                location.parentNode.appendChild(error);
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                // Scroll to first error
+                const firstError = form.querySelector('.form-error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

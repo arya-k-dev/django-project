@@ -1,0 +1,65 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Book Session | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Session Booking</p>
+    <h1>Book {{ receiver.get_full_name|default:receiver.username }}</h1>
+    <p class="text-slate">Send a session request with a date, time, duration, and skills.</p>
+  </div>
+  <a href="{% url 'profile_view' receiver.username %}" class="btn btn-secondary"><i class="fas fa-user"></i> Profile</a>
+</div>
+
+<section class="card">
+  <div class="card-header">
+    <h2>Session Details</h2>
+    <p>The request will stay pending until {{ receiver.first_name|default:receiver.username }} accepts it.</p>
+  </div>
+  <div class="card-body">
+    <form method="post" class="stack">
+      {% csrf_token %}
+      <div class="content-grid two">
+        <label>
+          <span class="form-label">Date</span>
+          <input type="date" name="date" class="form-input" required>
+        </label>
+        <label>
+          <span class="form-label">Time</span>
+          <input type="time" name="time" class="form-input" required>
+        </label>
+      </div>
+
+      <label>
+        <span class="form-label">Duration</span>
+        <select name="duration" class="form-input" required>
+          {% for value,label in duration_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div class="content-grid two">
+        <label>
+          <span class="form-label">Skill Offered</span>
+          <input type="text" name="skill_offered" maxlength="100" class="form-input" required>
+        </label>
+        <label>
+          <span class="form-label">Skill Requested</span>
+          <input type="text" name="skill_requested" maxlength="100" class="form-input" required>
+        </label>
+      </div>
+
+      <label>
+        <span class="form-label">Notes</span>
+        <textarea name="notes" rows="3" class="form-input"></textarea>
+      </label>
+
+      <div class="button-row">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Request</button>
+        <a href="{% url 'sessions_dashboard' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Sessions | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header reveal-on-scroll">
+  <div>
+    <p class="eyebrow">Session Booking</p>
+    <h1>My Sessions</h1>
+    <p class="text-slate">Track scheduled exchanges from countdown to review.</p>
+  </div>
+  <a href="{% url 'inbox' %}" class="btn btn-secondary"><i class="fas fa-comments"></i> Messages</a>
+</div>
+
+<div class="stats-grid session-stats-grid stagger-children">
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon gold"><i class="fas fa-calendar-check"></i></span>
+    <strong>{{ upcoming_count }}</strong>
+    <span>Upcoming</span>
+  </div>
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon green"><i class="fas fa-video"></i></span>
+    <strong>{{ live_count }}</strong>
+    <span>Live now</span>
+  </div>
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon navy"><i class="fas fa-circle-check"></i></span>
+    <strong>{{ completed_count }}</strong>
+    <span>Completed</span>
+  </div>
+  <div class="stat-card reveal-on-scroll">
+    <span class="stat-icon coral"><i class="fas fa-ban"></i></span>
+    <strong>{{ cancelled_count }}</strong>
+    <span>Cancelled</span>
+  </div>
+</div>
+
+<div class="session-filter-bar reveal-on-scroll" aria-label="Session filters">
+  <button type="button" class="session-filter active" data-session-filter="all">All</button>
+  <button type="button" class="session-filter" data-session-filter="upcoming">Upcoming</button>
+  <button type="button" class="session-filter" data-session-filter="live">Live</button>
+  <button type="button" class="session-filter" data-session-filter="completed">Completed</button>
+  <button type="button" class="session-filter" data-session-filter="cancelled">Cancelled</button>
+  <button type="button" class="session-filter" data-session-filter="missed">Missed</button>
+</div>
+
+<div data-tabs class="tabs-shell reveal-on-scroll sessions-shell">
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="tab-incoming">
+      Incoming <span class="badge badge-coral">{{ incoming_sessions|length }}</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-outgoing">
+      Outgoing <span class="badge badge-gray">{{ outgoing_sessions|length }}</span>
+    </button>
+  </div>
+
+  <section id="tab-incoming" class="tab-pane active">
+    <div class="session-card-grid">
+      {% for s in incoming_sessions %}
+        {% include 'sessions/session_card.html' with s=s direction='incoming' %}
+      {% empty %}
+        <div class="empty-state card">
+          <i class="fas fa-calendar"></i>
+          <h3>No upcoming sessions yet.</h3>
+          <p>Sessions others book with you will appear here.</p>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="empty-state card session-filter-empty hidden">
+      <i class="fas fa-filter"></i>
+      <h3>No sessions in this view</h3>
+      <p>Try another filter to see more session history.</p>
+    </div>
+  </section>
+
+  <section id="tab-outgoing" class="tab-pane">
+    <div class="session-card-grid">
+      {% for s in outgoing_sessions %}
+        {% include 'sessions/session_card.html' with s=s direction='outgoing' %}
+      {% empty %}
+        <div class="empty-state card">
+          <i class="fas fa-paper-plane"></i>
+          <h3>No upcoming sessions yet.</h3>
+          <p>Book sessions from your chat conversations or connected profiles.</p>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="empty-state card session-filter-empty hidden">
+      <i class="fas fa-filter"></i>
+      <h3>No sessions in this view</h3>
+      <p>Try another filter to see more session history.</p>
+    </div>
+  </section>
+</div>
+
+<div id="reschedule-modal" class="modal-backdrop hidden" data-modal>
+  <div class="modal-box session-reschedule-modal">
+    <div class="modal-header">
+      <h3><i class="fas fa-calendar-plus"></i> Reschedule Session</h3>
+      <button type="button" class="icon-button" data-close-modal aria-label="Close modal"><i class="fas fa-times"></i></button>
+    </div>
+    <form method="post" id="reschedule-form" class="form-stack">
+      {% csrf_token %}
+      <div class="form-grid two">
+        <div class="form-group">
+          <label class="form-label" for="reschedule-date">Date</label>
+          <input type="date" id="reschedule-date" name="date" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reschedule-time">Time</label>
+          <input type="time" id="reschedule-time" name="time" class="form-input" required>
+        </div>
+      </div>
+      <div class="form-grid two">
+        <div class="form-group">
+          <label class="form-label" for="reschedule-duration">Duration</label>
+          <select id="reschedule-duration" name="duration" class="form-input" required>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="90">1.5 hours</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reschedule-meeting-link">Meeting link</label>
+          <input type="url" id="reschedule-meeting-link" name="meeting_link" class="form-input" placeholder="https://meet.jit.si/...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reschedule-reason">Reason</label>
+        <textarea id="reschedule-reason" name="reason" class="form-input" rows="3" placeholder="Optional note for the other learner"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-check"></i> Save New Time</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

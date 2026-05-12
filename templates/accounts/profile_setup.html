@@ -1,0 +1,81 @@
+{% extends 'sidebar_base.html' %}
+{% block title %}Complete Your Profile | SkillSphere{% endblock %}
+
+{% block main_content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Settings</p>
+    <h1>Complete Your Profile</h1>
+    <p class="text-slate">Add enough detail for strong exchange matches.</p>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="form-stack" novalidate>
+  {% csrf_token %}
+  <div class="content-grid two">
+    <section class="card">
+      <div class="card-header">
+        <h2>Profile basics</h2>
+        <p>Public details shown to other members.</p>
+      </div>
+      <div class="card-body form-stack">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.bio.id_for_label }}">Bio</label>
+          {{ form.bio }}
+          {% for error in form.bio.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
+          {{ form.location }}
+          {% for error in form.location.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.availability.id_for_label }}">Availability</label>
+          {{ form.availability }}
+          {% for error in form.availability.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.avatar.id_for_label }}">Profile photo</label>
+          {{ form.avatar }}
+          {% for error in form.avatar.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Links and scheduling</h2>
+        <p>Optional information for smoother coordination.</p>
+      </div>
+      <div class="card-body form-stack">
+        <div class="form-group">
+          <label class="form-label" for="{{ form.linkedin_url.id_for_label }}">LinkedIn URL</label>
+          {{ form.linkedin_url }}
+          {% for error in form.linkedin_url.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.website_url.id_for_label }}">Website URL</label>
+          {{ form.website_url }}
+          {% for error in form.website_url.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="form-grid two">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.response_rate.id_for_label }}">Response rate</label>
+            {{ form.response_rate }}
+            {% for error in form.response_rate.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="{{ form.available_slots.id_for_label }}">Available slots</label>
+            {{ form.available_slots }}
+            {% for error in form.available_slots.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="form-actions">
+    <a href="{% url 'skill_add' %}" class="btn btn-secondary">Skip for now</a>
+    <button type="submit" class="btn btn-primary">Save and Continue</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+{% block title %}Chat with {{ other_user.get_full_name|default:other_user.username }} | SkillSphere{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+  <aside class="chat-sidebar">
+    <div class="chat-sidebar-header">
+      <strong><i class="fas fa-comments"></i> Messages</strong>
+      <a href="{% url 'inbox' %}" class="text-link">All</a>
+    </div>
+    <div class="chat-conversation-list">
+      {% for conv in request.user.conversations.all %}
+        {% for participant in conv.participants.all %}
+          {% if participant != request.user %}
+          <a href="{% url 'conversation' conv.id %}" class="conv-item {% if conv.id == conversation.id %}active{% endif %}">
+            <span class="avatar avatar-sm">{{ participant.first_name.0|default:participant.username.0|upper }}</span>
+            <span>
+              <strong>{{ participant.get_full_name|default:participant.username }}</strong>
+              {% with last=conv.messages.last %}
+                {% if last %}<small>{{ last.content|truncatechars:34 }}</small>{% endif %}
+              {% endwith %}
+            </span>
+          </a>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="chat-main">
+    <header class="chat-header">
+      <a href="{% url 'profile_view' other_user.username %}" class="avatar avatar-md">{{ other_user.first_name.0|default:other_user.username.0|upper }}</a>
+      <div class="chat-header-main">
+        <strong>{{ other_user.get_full_name|default:other_user.username }}</strong>
+        <small>
+          {% if they_teach_you %}They teach you: {{ they_teach_you|join:", " }}{% endif %}
+          {% if you_teach_them %} | You teach them: {{ you_teach_them|join:", " }}{% endif %}
+        </small>
+      </div>
+      <div class="button-row">
+        <a href="{% url 'profile_view' other_user.username %}" class="btn btn-secondary btn-sm">Profile</a>
+
+        {% if exchange.status == 'accepted' or exchange.status == 'completed' %}
+          <button type="button" class="btn btn-primary btn-sm" id="open-book-session-btn"
+            data-receiver-id="{{ other_user.id }}"
+            data-receiver-name="{{ other_user.get_full_name|default:other_user.username }}"
+            data-skill-offered="{{ you_teach_them|join:', ' }}"
+            data-skill-wanted="{{ they_teach_you|join:', ' }}">
+            <i class="fas fa-calendar-plus"></i> Book Session
+          </button>
+        {% else %}
+          <button type="button" class="btn btn-primary btn-sm" id="open-book-session-btn"
+            data-receiver-id="{{ other_user.id }}"
+            data-receiver-name="{{ other_user.get_full_name|default:other_user.username }}"
+            data-skill-offered=""
+            data-skill-wanted="">
+            <i class="fas fa-calendar-plus"></i> Book Session
+          </button>
+        {% endif %}
+
+        {% if exchange.status == 'accepted' %}
+        <form method="post" action="{% url 'mark_completed' exchange.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-secondary btn-sm">Mark Done</button>
+        </form>
+        {% elif exchange.status == 'completed' %}
+          <a href="{% url 'rate_user' other_user.id %}" class="btn btn-secondary btn-sm">Rate</a>
+        {% endif %}
+
+        <a href="{% url 'sessions_dashboard' %}" class="btn btn-secondary btn-sm">
+          <i class="fas fa-calendar-alt"></i> Sessions
+        </a>
+      </div>
+    </header>
+
+    <div class="chat-messages" id="chat-messages">
+      {% for msg in messages_list %}
+      <div class="message-wrapper {% if msg.sender == request.user %}mine{% endif %}">
+        {% if msg.sender != request.user %}
+          <span class="message-author">{{ msg.sender.get_full_name|default:msg.sender.username }}</span>
+        {% endif %}
+        <div class="message-bubble {% if msg.sender == request.user %}mine{% else %}theirs{% endif %}" data-msg-id="{{ msg.id }}" data-timestamp="{{ msg.timestamp|date:'c' }}">
+          {{ msg.content|linebreaksbr }}
+          <div class="message-time">{{ msg.timestamp|date:"H:i" }}</div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-state compact" id="empty-chat-state">
+        <i class="fas fa-comment-dots"></i>
+        <h3>Start the conversation</h3>
+        <p>Send a quick note to coordinate your exchange.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="chat-input-bar">
+      <form id="chat-form" class="chat-form">
+        {% csrf_token %}
+        <textarea id="chat-input" name="content" placeholder="Type a message..." rows="1" autocomplete="off"></textarea>
+        <button id="send-btn" type="submit" class="btn btn-primary">
+          <span class="btn-label"><i class="fas fa-paper-plane"></i> Send</span>
+          <span class="btn-loading hidden"><i class="fas fa-spinner fa-spin"></i> Sending</span>
+        </button>
+      </form>
+      <div id="chat-status" class="chat-status" aria-live="polite"></div>
+    </div>
+  </section>
+</div>
+
+<!-- Book Session Modal -->
+<div id="book-session-modal" class="modal-backdrop hidden" data-modal>
+  <div class="modal-box session-booking-box" style="max-width:520px;">
+    <div class="modal-header">
+      <h3><i class="fas fa-calendar-plus"></i> Book a Session</h3>
+      <button type="button" class="icon-button" data-close-modal aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div id="session-form-error" class="form-error-box hidden"></div>
+    <div id="session-form-success" class="hidden" style="padding:1.5rem;text-align:center;">
+      <i class="fas fa-check-circle" style="font-size:2.5rem;color:var(--success);"></i>
+      <p style="margin-top:.75rem;font-weight:700;font-size:1.1rem;">Session request sent!</p>
+      <p class="text-slate small">They will be notified and can accept or reject it.</p>
+    </div>
+
+    <div id="session-form-body">
+      <div class="form-stack" style="padding:0 0 1rem;">
+        <div class="form-grid two">
+          <div class="form-group">
+            <label class="form-label" for="sess-skill-offered">Skill you offer</label>
+            <input type="text" id="sess-skill-offered" class="form-input" placeholder="e.g. Python, Guitar…" maxlength="200">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sess-skill-wanted">Skill you want</label>
+            <input type="text" id="sess-skill-wanted" class="form-input" placeholder="e.g. Spanish, Design…" maxlength="200">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select Date</label>
+          <div id="session-calendar" class="session-calendar"></div>
+        </div>
+
+        <div class="form-group" id="time-slot-section" style="display:none;">
+          <label class="form-label">Select Time</label>
+          <div id="session-period-tabs" class="session-period-tabs" aria-label="Time period"></div>
+          <div id="session-time-slots" class="session-time-slots"></div>
+        </div>
+
+        <div class="form-grid two">
+          <div class="form-group">
+            <label class="form-label" for="sess-duration">Duration</label>
+            <select id="sess-duration" class="form-input">
+              <option value="30">30 min</option>
+              <option value="60" selected>1 hour</option>
+              <option value="90">1.5 hours</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Selected</label>
+            <input type="text" id="sess-selected-time" class="form-input" readonly placeholder="Pick above">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sess-notes">Notes</label>
+          <textarea id="sess-notes" class="form-input" rows="2" placeholder="Topics, platform link…"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <div id="session-action-error" class="form-error-box hidden" aria-live="polite"></div>
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+        <button type="button" class="btn btn-primary" id="submit-session-btn">
+          <i class="fas fa-paper-plane"></i> Book Session
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    initChatPolling({{ conversation.id }});
+    initMessageSend({{ conversation.id }});
+    initSessionBooking();
+  });
+
+  function initSessionBooking() {
+    const openBtn   = document.getElementById('open-book-session-btn');
+    const modal     = document.getElementById('book-session-modal');
+    const submitBtn = document.getElementById('submit-session-btn');
+    const errBox    = document.getElementById('session-form-error');
+    const actionErr = document.getElementById('session-action-error');
+    const successEl = document.getElementById('session-form-success');
+    const formBody  = document.getElementById('session-form-body');
+    if (!openBtn || !modal) return;
+
+    const receiverId = openBtn.dataset.receiverId;
+    let bookedSlots  = [];
+    let selectedDate = null;
+    let selectedHour = null;
+    let activePeriod = 'morning';
+    let calYear, calMonth;
+
+    document.getElementById('sess-skill-offered').value = openBtn.dataset.skillOffered || '';
+    document.getElementById('sess-skill-wanted').value  = openBtn.dataset.skillWanted  || '';
+
+    openBtn.addEventListener('click', function () {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      modal.scrollTop = 0;
+      errBox.classList.add('hidden');
+      actionErr.classList.add('hidden');
+      successEl.classList.add('hidden');
+      formBody.style.display = '';
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Book Session';
+      selectedDate = null; selectedHour = null; activePeriod = 'morning';
+      document.getElementById('sess-selected-time').value = '';
+      document.getElementById('time-slot-section').style.display = 'none';
+
+      const csrf = getCsrf();
+      fetch('/sessions/api/slots/' + receiverId + '/', { headers:{'X-CSRFToken':csrf} })
+        .then(r => r.json())
+        .then(data => {
+          bookedSlots = (data.booked_slots||[]).map(s=>({start:new Date(s.start),end:new Date(s.end)}));
+        }).catch(() => { bookedSlots = []; })
+        .finally(() => {
+          const now = new Date();
+          calYear = now.getFullYear(); calMonth = now.getMonth();
+          renderCalendar(calYear, calMonth);
+        });
+    });
+
+    modal.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', closeModal));
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+      selectedDate = null; selectedHour = null; activePeriod = 'morning';
+      errBox.classList.add('hidden');
+      actionErr.classList.add('hidden');
+      document.getElementById('sess-selected-time').value = '';
+      document.getElementById('time-slot-section').style.display = 'none';
+    }
+
+    function renderCalendar(year, month) {
+      const cal = document.getElementById('session-calendar');
+      const today = new Date(); today.setHours(0,0,0,0);
+      const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+      let cells = '';
+      for (let i=0;i<firstDay;i++) cells += '<div class="cal-day empty"></div>';
+      for (let d=1;d<=daysInMonth;d++) {
+        const dt = new Date(year,month,d);
+        const past = dt < today;
+        cells += `<div class="cal-day ${past?'past':'available'}" data-day="${d}">${d}</div>`;
+      }
+      cal.innerHTML = `
+        <div class="cal-nav">
+          <button type="button" class="btn btn-secondary btn-sm" id="cal-prev">&#8249;</button>
+          <strong>${names[month]} ${year}</strong>
+          <button type="button" class="btn btn-secondary btn-sm" id="cal-next">&#8250;</button>
+        </div>
+        <div class="cal-grid">
+          ${['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-day-name">${d}</div>`).join('')}
+          ${cells}
+        </div>`;
+      cal.querySelectorAll('.cal-day.available').forEach(cell => {
+        cell.addEventListener('click', function() {
+          cal.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected'));
+          this.classList.add('selected');
+          selectedDate = new Date(year, month, parseInt(this.dataset.day));
+          selectedHour = null;
+          activePeriod = 'morning';
+          document.getElementById('sess-selected-time').value = '';
+          renderTimeSlots();
+        });
+      });
+      document.getElementById('cal-prev').addEventListener('click', () => {
+        if (calMonth===0){calYear--;calMonth=11;}else{calMonth--;}
+        renderCalendar(calYear,calMonth);
+      });
+      document.getElementById('cal-next').addEventListener('click', () => {
+        if (calMonth===11){calYear++;calMonth=0;}else{calMonth++;}
+        renderCalendar(calYear,calMonth);
+      });
+    }
+
+    function renderTimeSlots() {
+      const section = document.getElementById('time-slot-section');
+      const grid    = document.getElementById('session-time-slots');
+      const tabs    = document.getElementById('session-period-tabs');
+      if (!selectedDate){section.style.display='none';return;}
+      section.style.display='';
+      const periods = {
+        morning: { label: 'Morning', start: 7, end: 11 },
+        afternoon: { label: 'Afternoon', start: 12, end: 15 },
+        evening: { label: 'Evening', start: 16, end: 21 },
+      };
+      tabs.innerHTML = Object.entries(periods).map(([key, period]) =>
+        `<button type="button" class="period-tab${activePeriod===key?' active':''}" data-period="${key}">${period.label}</button>`
+      ).join('');
+      tabs.querySelectorAll('.period-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+          activePeriod = this.dataset.period;
+          renderTimeSlots();
+        });
+      });
+      const duration = parseInt(document.getElementById('sess-duration').value)||60;
+      const now = new Date();
+      let html='';
+      const period = periods[activePeriod] || periods.morning;
+      for(let h=period.start;h<=period.end;h++){
+        for(let m=0;m<60;m+=30){
+          const start = new Date(selectedDate); start.setHours(h,m,0,0);
+          const end   = new Date(start.getTime()+duration*60000);
+          const past  = start <= now;
+          const booked= bookedSlots.some(b=>start<b.end&&b.start<end);
+          const hh=String(h).padStart(2,'0'), mm=String(m).padStart(2,'0');
+          const label=`${hh}:${mm}`;
+          const dis=past||booked;
+          const sel=selectedHour===label;
+          html+=`<button type="button" class="time-slot${dis?' disabled':''}${sel?' selected':''}" data-time="${label}"${dis?' disabled':''}>${label}</button>`;
+        }
+      }
+      grid.innerHTML=html;
+      grid.querySelectorAll('.time-slot:not(.disabled)').forEach(btn=>{
+        btn.addEventListener('click',function(){
+          grid.querySelectorAll('.time-slot').forEach(b=>b.classList.remove('selected'));
+          this.classList.add('selected');
+          selectedHour=this.dataset.time;
+          const disp=selectedDate.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+          document.getElementById('sess-selected-time').value=`${disp} at ${selectedHour}`;
+        });
+      });
+    }
+
+    document.getElementById('sess-duration').addEventListener('change',()=>{
+      selectedHour=null;
+      document.getElementById('sess-selected-time').value='';
+      renderTimeSlots();
+    });
+
+    submitBtn.addEventListener('click',function(){
+      if(submitBtn.disabled) return;
+      errBox.classList.add('hidden');
+      actionErr.classList.add('hidden');
+      const offeredEl=document.getElementById('sess-skill-offered');
+      const wantedEl=document.getElementById('sess-skill-wanted');
+      const offered=offeredEl.value.trim(),wanted=wantedEl.value.trim();
+      if(!offered){showError('Please enter the skill you can offer.',offeredEl);return;}
+      if(!wanted){showError('Please enter the skill you want to learn.',wantedEl);return;}
+      if(!selectedDate||!selectedHour){showError('Please select a date and time.',document.getElementById('session-calendar'));return;}
+      const [hh,mm]=selectedHour.split(':');
+      const dt=new Date(selectedDate); dt.setHours(parseInt(hh),parseInt(mm),0,0);
+      const pad=n=>String(n).padStart(2,'0');
+      const offset=-dt.getTimezoneOffset(),sign=offset>=0?'+':'-',oh=pad(Math.floor(Math.abs(offset)/60)),om=pad(Math.abs(offset)%60);
+      const scheduledAt=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}:00${sign}${oh}:${om}`;
+      const payload={
+        receiver_id:parseInt(receiverId),
+        scheduled_at:scheduledAt,
+        duration:parseInt(document.getElementById('sess-duration').value),
+        skill_offered:offered,
+        skill_wanted:wanted,
+        notes:document.getElementById('sess-notes').value.trim(),
+      };
+      submitBtn.disabled=true;
+      submitBtn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Sending...';
+      fetch('/sessions/api/create/',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRFToken':getCsrf()},
+        body:JSON.stringify(payload),
+      }).then(r=>r.json()).then(data=>{
+        if(data.ok){
+          formBody.style.display='none';
+          successEl.classList.remove('hidden');
+          setTimeout(closeModal,2500);
+        } else {
+          showError(data.error||'Something went wrong.');
+          submitBtn.disabled=false;
+          submitBtn.innerHTML='<i class="fas fa-paper-plane"></i> Book Session';
+        }
+      }).catch(()=>{
+        showError('Network error.');
+        submitBtn.disabled=false;
+        submitBtn.innerHTML='<i class="fas fa-paper-plane"></i> Book Session';
+      });
+    });
+
+    function showError(msg,target){
+      errBox.textContent=msg;
+      actionErr.textContent=msg;
+      errBox.classList.remove('hidden');
+      actionErr.classList.remove('hidden');
+      if(target&&target.focus)target.focus({preventScroll:true});
+      (target||errBox).scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    function getCsrf(){return document.cookie.match(/csrftoken=([^;]+)/)?.[1]||'';}
+  }
+</script>
+
+<style>
+.session-calendar{border:1px solid var(--border);border-radius:var(--radius-lg);padding:.75rem;background:var(--surface-muted);}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;}
+.cal-day-name{font-size:.7rem;font-weight:700;color:var(--slate);padding:.2rem 0;}
+.cal-day{border-radius:var(--radius);padding:.4rem .2rem;font-size:.85rem;}
+.cal-day.past{color:var(--slate-300);}
+.cal-day.available{cursor:pointer;transition:background .15s;}
+.cal-day.available:hover{background:var(--lavender-100);}
+.cal-day.selected{background:var(--lavender-500)!important;color:#fff;font-weight:700;}
+#book-session-modal.modal-backdrop{align-items:center;padding:1rem;}
+.session-booking-box{max-height:calc(100vh - 2rem);overflow-y:auto;overscroll-behavior:contain;}
+.session-booking-box #session-form-body{overflow:visible;}
+.session-booking-box .modal-actions{position:sticky;bottom:0;z-index:2;background:#fff;border-top:1px solid var(--border);padding:1rem 0 0;margin-top:1rem;box-shadow:0 -8px 18px rgba(255,255,255,.9);}
+.session-booking-box #session-action-error{flex:1 1 100%;margin:0;padding:.65rem .8rem;}
+@media (max-width:640px){
+  #book-session-modal.modal-backdrop{align-items:flex-start;padding:.75rem;}
+  .session-booking-box{width:100%;max-height:calc(100vh - 1.5rem);}
+}
+.session-period-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:.5rem;}
+.period-tab{border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--slate);font-size:.78rem;font-weight:700;padding:.38rem .45rem;cursor:pointer;transition:all .15s;}
+.period-tab.active,.period-tab:hover{background:var(--lavender-500);border-color:var(--lavender-500);color:#fff;}
+.session-time-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;overflow:visible;}
+.time-slot{border:1px solid var(--border);border-radius:var(--radius);background:#fff;padding:.3rem .25rem;font-size:.78rem;cursor:pointer;transition:all .15s;}
+.time-slot:hover:not(.disabled){border-color:var(--lavender-500);background:var(--lavender-50);}
+.time-slot.selected{background:var(--lavender-500);color:#fff;border-color:var(--lavender-500);}
+.time-slot.disabled{color:var(--slate-300);background:var(--slate-50);cursor:not-allowed;text-decoration:line-through;}
+@media (max-width:640px){.session-time-slots{grid-template-columns:repeat(3,1fr);}}
+</style>
+{% endblock %}
